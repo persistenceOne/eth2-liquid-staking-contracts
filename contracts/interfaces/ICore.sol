@@ -6,7 +6,7 @@ import "./IStkEth.sol";
 
 /// @title Core interface
 /// @author Ankit Parashar
-interface ICore {
+interface ICore is IPermissions {
 
     function init() external;
 
@@ -19,4 +19,5 @@ interface ICore {
     function keysManager() external view returns(address);
 
     function set(bytes32 _key, address _address) external;
+
 }

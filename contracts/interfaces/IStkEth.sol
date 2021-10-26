@@ -6,7 +6,7 @@ import "./ICoreRef.sol";
 
 /// @title Oracle interface
 /// @author Ankit Parashar
-interface IStkEth is IERC20, ICoreRef {
+interface IStkEth is IERC20{
 
     function pricePerShare() external view returns (uint256 amount);
 

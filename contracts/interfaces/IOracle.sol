@@ -9,7 +9,7 @@ interface IOracle is ICoreRef {
 
     // To do
     struct NodeData {
-
+        uint256 price;
     }
 
     function pricePerShare() external view returns (uint256);
