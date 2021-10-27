@@ -25,6 +25,11 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
+    modifier onlyBurner() {
+        require(_core.isBurner(msg.sender), "CoreRef: Caller is not a burner");
+        _;
+    }
+
     modifier onlyGovernor() {
         require(
             _core.isGovernor(msg.sender),

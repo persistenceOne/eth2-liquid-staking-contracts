@@ -86,11 +86,10 @@ contract StkEth is IStkEth, ERC20, CoreRef {
     }    
 
     function pricePerShare() public view override returns (uint256) {
-        // Todo
         return 0;
     }
 
-    function burn(address user, uint256 amount) external override {
-        // Todo
+    function burn(address user, uint256 amount) public override virtual onlyBurner {
+        _burn(user, amount);
     }
 }

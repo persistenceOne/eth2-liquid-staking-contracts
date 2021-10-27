@@ -13,17 +13,19 @@ interface IPermissions {
 
     function grantMinter(address minter) external;
 
+    function grantBurner(address burner) external;
+
     function revokeGovernor(address governor) external;
 
     function revokeMinter(address minter) external;
 
-    // ----------- Revoker only state changing api -----------
-
-    function revokeOverride(bytes32 role, address account) external;
+    function revokeBurner(address burner) external;
 
     // ----------- Getters -----------
 
     function isMinter(address _address) external view returns (bool);
 
     function isGovernor(address _address) external view returns (bool);
+
+    function isBurner(address _address) external view returns (bool);
 }
