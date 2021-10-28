@@ -20,4 +20,6 @@ interface ICore is IPermissions {
 
     function set(bytes32 _key, address _address) external;
 
+    function coreContract(bytes32 key) external view returns (address);
+
 }

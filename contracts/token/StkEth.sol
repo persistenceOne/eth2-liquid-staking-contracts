@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../CoreRef.sol";
+import "../interfaces/IOracle.sol";
 
 /// @title StkEth Contract
 /// @author Ankit Parashar
@@ -86,7 +87,7 @@ contract StkEth is IStkEth, ERC20, CoreRef {
     }    
 
     function pricePerShare() public view override returns (uint256) {
-        return 0;
+        return IOracle(core().oracle()).pricePerShare();
     }
 
     function burn(address user, uint256 amount) public override virtual onlyBurner {

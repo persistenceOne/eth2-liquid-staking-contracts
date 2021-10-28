@@ -61,4 +61,5 @@ abstract contract CoreRef is ICoreRef, Pausable {
     function core() public view override returns (ICore) {
         return _core;
     }
+
 }

@@ -16,6 +16,12 @@ contract Core is Initializable, ICore, Permissions {
 
     IStkEth public override stkEth;
 
+    bytes32 public constant ORACLE = keccak256("ORACLE");
+    bytes32 public constant WITHDRAWAL_CREDENTIAL = keccak256("WITHDRAWAL_CREDENTIAL");
+    bytes32 public constant KEYS_MANAGER = keccak256("KEYS_MANAGER");
+
+    mapping(bytes32 => address) public override coreContract;
+
     function init() external override initializer {
 
         _setupGovernor(msg.sender);
@@ -29,22 +35,19 @@ contract Core is Initializable, ICore, Permissions {
     }
 
     function oracle() external view override returns(address) {
-        // Todo
-        return address(0);
+        return coreContract[ORACLE];
     }
 
     function withdrawalCredential() external view override returns(address) {
-        // Todo
-        return address(0);
+        return coreContract[WITHDRAWAL_CREDENTIAL];
     }
 
     function keysManager() external view override returns(address) {
-        // Todo
-        return address(0);
+        return coreContract[KEYS_MANAGER];
     }
 
-    function set(bytes32 _key, address _address) external override {
-        // Todo
+    function set(bytes32 _key, address _address) external override onlyGovernor {
+        coreContract[_key] = _address;
     }
 
 }
