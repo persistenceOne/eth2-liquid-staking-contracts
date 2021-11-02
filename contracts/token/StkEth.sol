@@ -45,7 +45,7 @@ contract StkEth is IStkEth, ERC20, CoreRef {
         _mint(to, amount);
     }
 
-    /// @notice permit spending of Artha
+    /// @notice permit spending of StkEth
     /// @param owner the stkEth holder
     /// @param spender the approved operator
     /// @param value the amount approved
