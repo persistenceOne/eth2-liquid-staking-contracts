@@ -18,5 +18,5 @@ interface IOracle is ICoreRef {
 
     function oracleNodes() external returns (address[] memory);
 
-    function pushData(NodeData memory data) external;
+    function pushData(uint64 latestEthBalance, uint256 latestNonce) external;
 }

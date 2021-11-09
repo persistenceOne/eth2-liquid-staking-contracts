@@ -3,8 +3,10 @@ pragma solidity ^0.8.0;
 // import "./CoreRef.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./interfaces/IStkEth.sol";
+import "./interfaces/IOracle.sol";
+import "./CoreRef.sol";
 
-contract Oracle {
+contract Oracle is IOracle, CoreRef  {
     using Counters for Counters.Counter;
     
     uint128 internal constant ETH2_DENOMINATION = 1e9;
@@ -83,7 +85,7 @@ contract Oracle {
         return(beaconData.epochsPerTimePeriod,beaconData.slotsPerEpoch,beaconData.secondsPerSlot,beaconData.genesisTime);
     }
 
-    function pricePerShare() external view returns (uint256){
+    function pricePerShare() external override view returns (uint256){
         return(IStkEth(stkEthAddress).totalSupply()/totalPooledEther);
     }
     
@@ -147,7 +149,7 @@ contract Oracle {
         pricePerSharePEth = price;
     }
     
-    function pushData(uint64 latestEthBalance, uint256 latestNonce) external{
+    function pushData(uint64 latestEthBalance, uint256 latestNonce) external override{
         if(isOralce(msg.sender) == false)
             revert("Not oracle Member");
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
