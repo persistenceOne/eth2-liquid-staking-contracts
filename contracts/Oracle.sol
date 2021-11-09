@@ -16,6 +16,8 @@ contract Oracle {
         uint64 genesisTime;
     }
     
+    address stkEthAddress;
+    
     uint256 lastCompletedEpochId;
     uint256 totalPooledEther;
     Counters.Counter private nonce;
@@ -33,10 +35,11 @@ contract Oracle {
     
     address Admin;
 
-    constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core, address admin) 
+    constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core, address admin, address sktEth) 
     CoreRef(core)
 {
         Admin = admin;
+        stkEthAddress = sktEth;
         beaconData.epochsPerTimePeriod = epochsPerTimePeriod; 
         beaconData.slotsPerEpoch = slotsPerEpoch;
         beaconData.secondsPerSlot = secondsPerSlot;
@@ -80,8 +83,8 @@ contract Oracle {
         return(beaconData.epochsPerTimePeriod,beaconData.slotsPerEpoch,beaconData.secondsPerSlot,beaconData.genesisTime);
     }
 
-    function pricePerShare(address IstkEthAddress) external view returns (uint256){
-        return(IStkEth(IstkEthAddress).totalSupply()/totalPooledEther);
+    function pricePerShare() external view returns (uint256){
+        return(IStkEth(stkEthAddress).totalSupply()/totalPooledEther);
     }
     
     function _getFrameFirstEpochId(uint256 _epochId, BeaconData memory _beaconSpec) internal view returns (uint256) {
@@ -135,6 +138,15 @@ contract Oracle {
         return false;
     }
     
+    function updatePricePershare() internal{
+        uint256 price = IStkEth(stkEthAddress).totalSupply()/totalPooledEther;
+        if (price < pricePerSharePEth)
+        {
+            //slashing
+        }
+        pricePerSharePEth = price;
+    }
+    
     function pushData(uint64 latestEthBalance, uint256 latestNonce) external{
         if(isOralce(msg.sender) == false)
             revert("Not oracle Member");
@@ -174,6 +186,8 @@ contract Oracle {
         beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
         lastCompletedEpochId = currentFrameEpochId;
     }
+    
+    
 
     //DAO
     function updateBeaconChainData(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime) external{
@@ -184,7 +198,6 @@ contract Oracle {
             genesisTime
         );
     }
-    
         
     function _setBeaconSpec(
         uint64 _epochsPerTimePeriod,
@@ -205,6 +218,4 @@ contract Oracle {
         beaconData.genesisTime = _genesisTime;
 
     }
-    
 }
-
