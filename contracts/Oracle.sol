@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./interfaces/IStkEth.sol";
 import "./interfaces/IOracle.sol";
+import "./interfaces/IStakingPool.sol";
 import "./CoreRef.sol";
 
 contract Oracle is IOracle, CoreRef  {
@@ -23,7 +24,7 @@ contract Oracle is IOracle, CoreRef  {
     uint256 lastCompletedEpochId;
     uint256 totalPooledEther;
     Counters.Counter private nonce;
-    uint256 pricePerSharePEth;
+    uint256 public override pricePerShare;
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
     uint256 oracleMemberSize = 0;
@@ -37,11 +38,9 @@ contract Oracle is IOracle, CoreRef  {
     
     address Admin;
 
-    constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core, address admin, address sktEth) 
+    constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core) 
     CoreRef(core)
-{
-        Admin = admin;
-        stkEthAddress = sktEth;
+    {
         beaconData.epochsPerTimePeriod = epochsPerTimePeriod; 
         beaconData.slotsPerEpoch = slotsPerEpoch;
         beaconData.secondsPerSlot = secondsPerSlot;
@@ -83,10 +82,6 @@ contract Oracle is IOracle, CoreRef  {
 
     function getBeaconData() external view returns (uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime){
         return(beaconData.epochsPerTimePeriod,beaconData.slotsPerEpoch,beaconData.secondsPerSlot,beaconData.genesisTime);
-    }
-
-    function pricePerShare() external override view returns (uint256){
-        return(IStkEth(stkEthAddress).totalSupply()/totalPooledEther);
     }
     
     function _getFrameFirstEpochId(uint256 _epochId, BeaconData memory _beaconSpec) internal view returns (uint256) {
@@ -140,13 +135,29 @@ contract Oracle is IOracle, CoreRef  {
         return false;
     }
     
-    function updatePricePershare() internal{
-        uint256 price = IStkEth(stkEthAddress).totalSupply()/totalPooledEther;
-        if (price < pricePerSharePEth)
+    function updatePricePershare(uint256 newEthBalance) internal {
+        uint256 price = newEthBalance/stkEth().totalSupply();
+        if (price < pricePerShare)
         {
             //slashing
+
+            // calculate number of stkEth needed to be burnt in order for price per share to remain same.
+
+            uint256 newSupply = newEthBalance/pricePerShare;
+
+            IStakingPool(address(core())).slash(newSupply);
+
+            // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
+            if(newSupply < stkEth().totalSupply()){
+                pricePerShare = newEthBalance/stkEth().totalSupply();
+            }
+
+        }else{
+            // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
+            // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
+            // and then respectively mint new stkEth to treasury and validator pool address
+            pricePerSharePEth = price;
         }
-        pricePerSharePEth = price;
     }
     
     function pushData(uint64 latestEthBalance, uint256 latestNonce) external override{
@@ -171,7 +182,7 @@ contract Oracle is IOracle, CoreRef  {
         uint256 oraclesCount = oracleMember.length;
         if (candidateNewVotes > quorom) {
             // update total rewards
-            BeaconEthereumBalance = latestEthBalance;
+            updatePricePershare(latestEthBalance);
 
             // clean up votes
             delete submittedVotes[voteId];
