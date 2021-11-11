@@ -11,7 +11,7 @@ contract Issuer is CoreRef {
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
     
-    mapping(address => mapping(uint256 => uint256)) public override activations;
+    mapping(address => mapping(uint256 => uint256)) public activations;
 
     constructor(address core,
                 uint256 _minActivatingDeposit,
@@ -50,21 +50,21 @@ contract Issuer is CoreRef {
         }
 
         // mint tokens if current pending validators limit is not exceed
-        uint256 _pendingValidators = pendingValidators.add((address(this).balance).div(VALIDATOR_DEPOSIT));
+        uint256 _pendingValidators = pendingValidators + ((address(this).balance)/(VALIDATOR_DEPOSIT));
         uint256 _activatedValidators = oracle().activatedValidators(); 
-        uint256 validatorIndex = _activatedValidators.add(_pendingValidators);
-        if (validatorIndex.mul(1e4) <= _activatedValidators.mul(pendingValidatorsLimit.add(1e4))) {
+        uint256 validatorIndex = _activatedValidators + _pendingValidators;
+        if (validatorIndex * 1e4 <= _activatedValidators * (pendingValidatorsLimit + 1e4)) {
             mintStkEthForEth(msg.value, msg.sender);
         } else {
             // lock deposit amount until validator activated
-            activations[msg.sender][validatorIndex] = activations[msg.sender][validatorIndex].add(msg.value);
+            activations[msg.sender][validatorIndex] = activations[msg.sender][validatorIndex] + msg.value;
         }
 
     }
 
     function activate(address _account, uint256 _validatorIndex) external whenNotPaused {
         uint256 activatedValidators = oracle().activatedValidators();
-        require(_validatorIndex.mul(1e4) <= activatedValidators.mul(pendingValidatorsLimit.add(1e4)), "Issuer: validator is not active yet");
+        require(_validatorIndex * 1e4 <= activatedValidators * (pendingValidatorsLimit + 1e4), "Issuer: validator is not active yet");
 
         uint256 amount = activations[_account][_validatorIndex];
         require(amount > 0, "Issuer: invalid validator index");

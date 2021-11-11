@@ -22,5 +22,4 @@ interface ICoreRef {
     function stkEth() external view returns (IStkEth);
 
     function oracle() external view returns (IOracle);
-
 }

@@ -9,6 +9,7 @@ abstract contract Permissions is IPermissions, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant NODE_OPERATOR_ROLE = keccak256("NODE_OPERATOR_ROLE");
 
     constructor(){
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -17,6 +18,7 @@ abstract contract Permissions is IPermissions, AccessControl {
         _setRoleAdmin(MINTER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(BURNER_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(NODE_OPERATOR_ROLE, GOVERN_ROLE);
     }
 
     modifier onlyGovernor() {
@@ -34,6 +36,11 @@ abstract contract Permissions is IPermissions, AccessControl {
 
     modifier onlyBurner() {
         require(isBurner(msg.sender), "Permissions: Caller is not a burner");
+        _;
+    }
+
+    modifier onlyNodeOperator() {
+        require(isNodeOperator(msg.sender), "Permissions: Caller is not a node operator");
         _;
     }
 
@@ -61,6 +68,11 @@ abstract contract Permissions is IPermissions, AccessControl {
         grantRole(BURNER_ROLE, burner);
     }
 
+    /// @notice grants node operator role to address
+    /// @param nodeOperator new nodeOperator
+    function grantNodeOperator(address nodeOperator) public override onlyGovernor {
+        grantRole(NODE_OPERATOR_ROLE, nodeOperator);
+    }
 
     /// @notice grants governor role to address
     /// @param governor new governor
@@ -78,6 +90,12 @@ abstract contract Permissions is IPermissions, AccessControl {
     /// @param burner ex burner
     function revokeBurner(address burner) public override onlyGovernor {
         revokeRole(BURNER_ROLE, burner);
+    }
+
+    /// @notice revokes node operator role from address
+    /// @param nodeOperator ex nodeOperator
+    function revokeNodeOperator(address nodeOperator) public override onlyGovernor {
+        revokeRole(NODE_OPERATOR_ROLE, nodeOperator);
     }
 
     /// @notice revokes governor role from address
@@ -98,6 +116,13 @@ abstract contract Permissions is IPermissions, AccessControl {
     /// @return true _address is a burner
     function isBurner(address _address) public view override returns (bool) {
         return hasRole(BURNER_ROLE, _address);
+    }
+
+    /// @notice checks if address is a node operator
+    /// @param _address address to check
+    /// @return true _address is a node operator
+    function isNodeOperator(address _address) public view override returns (bool) {
+        return hasRole(NODE_OPERATOR_ROLE, _address);
     }
 
 
