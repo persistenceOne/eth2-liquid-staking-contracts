@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/ICoreRef.sol";
 import "./interfaces/ICore.sol";
+import "./interfaces/IOracle.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -62,4 +63,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
         return _core;
     }
 
+    function oracle() public view override returns (IOracle) {
+        return IOracle(_core.oracle());
+    }
 }

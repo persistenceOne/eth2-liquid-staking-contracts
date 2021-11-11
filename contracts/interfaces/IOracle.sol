@@ -14,6 +14,8 @@ interface IOracle is ICoreRef {
 
     function pricePerShare() external view returns (uint256);
 
+    function activatedValidators() external view returns (uint256);
+
     function addOracleNode(address node) external;
 
     function oracleNodes() external returns (address[] memory);
