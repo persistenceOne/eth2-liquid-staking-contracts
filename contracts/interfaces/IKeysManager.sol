@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ICoreRef.sol";
 
-/// @title Oracle interface
+/// @title KeysManager interface
 /// @author Ankit Parashar
 interface IKeysManager {
 
