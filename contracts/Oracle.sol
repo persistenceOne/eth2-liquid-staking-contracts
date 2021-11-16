@@ -103,8 +103,13 @@ contract Oracle is CoreRef{
         return lastCompletedEpochId;    
     }
     
-    function updateQuorom(uint32 latestQuorom) external{
+    function updateQuorom(uint32 latestQuorom) external onlyGovernor{
         quorom = latestQuorom;
+    }
+
+    function updateCommissions(uint32 pStakeCommisisos, uint32 valCommissions) external onlyGovernor{
+        pStakeCommisison = pStakeCommisisos;
+        valCommission = valCommissions;
     }
 
     function addOracleMember(address newOracleMember) external onlyGovernor{
