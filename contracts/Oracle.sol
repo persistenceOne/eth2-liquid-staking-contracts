@@ -21,7 +21,7 @@ contract Oracle is CoreRef{
     uint256 lastCompletedEpochId;
     uint256 totalPooledEther;
     Counters.Counter private nonce;
-    uint256 pricePerShare;
+    uint256 pricePerShareStk;
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
     uint32 numberOfVal;
@@ -46,7 +46,7 @@ contract Oracle is CoreRef{
         beaconData.slotsPerEpoch = slotsPerEpoch;
         beaconData.secondsPerSlot = secondsPerSlot;
         beaconData.genesisTime = genesisTime;
-        pStkCommisison = pStakeCommisisons;
+        pStakeCommisison = pStakeCommisisons;
         valCommission = valCommissions;
     }
     
@@ -149,18 +149,18 @@ contract Oracle is CoreRef{
     
     function updatePricePershare(uint64 latestEthBalance) internal{
         uint256 priceDifference = latestEthBalance - totalPooledEther;
-        price = (IStkEth(stkEthAddress).totalSupply()/latestEthBalance);
+        uint256 price = (IStkEth(stkEthAddress).totalSupply()/latestEthBalance);
         if(priceDifference<0){
             //slashing
         }
         else{
-            uint256 valEthShare = (valCommissions*priceDifference)/100;
-            uint256 protocolEthShare = (pStkCommisison*priceDifference)/100;
-            IStkEth(stkEthAddress).mint(governor,(valEthShare/price));
-            IStkEth(stkEthAddress).mint(governor,(protocolEthShare/price));
+            uint256 valEthShare = (valCommission*priceDifference)/100;
+            uint256 protocolEthShare = (pStakeCommisison*priceDifference)/100;
+            IStkEth(stkEthAddress).mint(0x7723DcdBA4b375157375fd363c238Be82a9eDF84,(valEthShare/price));
+            IStkEth(stkEthAddress).mint(0x7723DcdBA4b375157375fd363c238Be82a9eDF84,(protocolEthShare/price));
         }
         totalPooledEther = latestEthBalance;
-        pricePerSharePEth = price;
+        pricePerShareStk = price;
     }
     
     function pushData(uint64 latestEthBalance, uint256 latestNonce, uint32 numberOfValidators) external{
