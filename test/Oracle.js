@@ -3,19 +3,15 @@ const StkEth = artifacts.require("StkEth.sol");
 const Oracle = artifacts.require("Oracle.sol");
 
 const { expectRevert, constants, time } = require("@openzeppelin/test-helpers");
-const { latest } = require("@openzeppelin/test-helpers/src/time");
 require("chai").use(require("chai-as-promised")).should();
 const { assert } = require("chai");
-const exp = require("constants");
 
 contract("Oracle Contract", function (accounts) {
-  let storage;
   const [governance, controller, newGovernance, account1, account2] = accounts;
   const epochsPerTimePeriod = 10;
   const slotsPerEpoch = 32;
   const secondsPerSlot = 12;
   const genesisTime = 1616508000;
-  let qourom = 2;
   let pStakeCommisisons = 2;
   let valCommissions = 3;
   let core;
