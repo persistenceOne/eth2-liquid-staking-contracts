@@ -19,9 +19,8 @@ contract Oracle is CoreRef{
     address stkEthAddress;
     
     uint256 lastCompletedEpochId;
-    uint256 totalPooledEther;
+    uint256 totalEther;
     Counters.Counter private nonce;
-    uint256 pricePerShareStk;
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
     uint32 numberOfVal;
@@ -35,8 +34,6 @@ contract Oracle is CoreRef{
     mapping(bytes32 => bool) private submittedVotes;   
     BeaconData beaconData;
     
-    address Admin;
-
     constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core, address sktEth, uint32 pStakeCommisisons,
     uint32 valCommissions) 
     CoreRef(core)
@@ -87,8 +84,8 @@ contract Oracle is CoreRef{
         return(beaconData.epochsPerTimePeriod,beaconData.slotsPerEpoch,beaconData.secondsPerSlot,beaconData.genesisTime);
     }
 
-    function pricePerShare() external view returns (uint256){
-        return(IStkEth(stkEthAddress).totalSupply()/totalPooledEther);
+    function pricePerShare() public view returns (uint256){
+        return(IStkEth(stkEthAddress).totalSupply()/totalEther);
     }
     
     function _getFrameFirstEpochId(uint256 _epochId, BeaconData memory _beaconSpec) internal view returns (uint256) {
@@ -102,8 +99,13 @@ contract Oracle is CoreRef{
     function getLastCompletedEpochId() external view returns (uint256){
         return lastCompletedEpochId;    
     }
+
+     function getTotalEther() external view returns (uint256){
+        return totalEther;    
+    }
     
     function updateQuorom(uint32 latestQuorom) external onlyGovernor{
+        require(latestQuorom>=0, "Quorom less that 0");
         quorom = latestQuorom;
     }
 
@@ -148,19 +150,19 @@ contract Oracle is CoreRef{
     }
     
     function updatePricePershare(uint64 latestEthBalance) internal{
-        uint256 priceDifference = latestEthBalance - totalPooledEther;
+        uint256 priceDifference = latestEthBalance - totalEther;
         uint256 price = (IStkEth(stkEthAddress).totalSupply()/latestEthBalance);
+        totalEther = latestEthBalance;
+
         if(priceDifference<0){
             //slashing
         }
         else{
             uint256 valEthShare = (valCommission*priceDifference)/100;
             uint256 protocolEthShare = (pStakeCommisison*priceDifference)/100;
-            IStkEth(stkEthAddress).mint(0x7723DcdBA4b375157375fd363c238Be82a9eDF84,(valEthShare/price));
-            IStkEth(stkEthAddress).mint(0x7723DcdBA4b375157375fd363c238Be82a9eDF84,(protocolEthShare/price));
+            IStkEth(stkEthAddress).mint(0x7723DcdBA4b375157375fd363c238Be82a9eDF84,(valEthShare * 1e18/pricePerShare()));
+            IStkEth(stkEthAddress).mint(0x7723DcdBA4b375157375fd363c238Be82a9eDF84,(protocolEthShare* 1e18/pricePerShare()));
         }
-        totalPooledEther = latestEthBalance;
-        pricePerShareStk = price;
     }
     
     function pushData(uint64 latestEthBalance, uint256 latestNonce, uint32 numberOfValidators) external{
@@ -203,7 +205,7 @@ contract Oracle is CoreRef{
     }
 
     //DAO
-    function updateBeaconChainData(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime) external{
+    function updateBeaconChainData(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime) external onlyGovernor {
         _setBeaconSpec(
             epochsPerTimePeriod,
             slotsPerEpoch,
