@@ -1,11 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./ICoreRef.sol";
 
 /// @title Oracle interface
 /// @author Ankit Parashar
-interface IOracle is ICoreRef {
+interface IOracle{
 
     // To do
     struct NodeData {
@@ -13,6 +12,8 @@ interface IOracle is ICoreRef {
     }
 
     function pricePerShare() external view returns (uint256);
+
+    function activatedValidators() external view returns (uint256);
 
     function addOracleNode(address node) external;
 

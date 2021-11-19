@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ICore.sol";
 import "./IStkEth.sol";
+import "./IOracle.sol";
 
 /// @title CoreRef interface
 /// @author Ankit Parashar
@@ -20,4 +21,5 @@ interface ICoreRef {
 
     function stkEth() external view returns (IStkEth);
 
+    function oracle() external view returns (IOracle);
 }

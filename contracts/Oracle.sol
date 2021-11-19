@@ -24,11 +24,13 @@ contract Oracle is IOracle, CoreRef  {
     uint256 lastCompletedEpochId;
     uint256 totalPooledEther;
     Counters.Counter private nonce;
-    uint256 public override pricePerShare;
+    uint256 pricePerShare;
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
+    uint32 numberOfVal;
     uint256 oracleMemberSize = 0;
-    uint256 BeaconEthereumBalance;
+    uint32 pStakeCommisison;
+    uint32 valCommission;
 
 
     address[] oracleMember;
@@ -38,13 +40,17 @@ contract Oracle is IOracle, CoreRef  {
     
     address Admin;
 
-    constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core) 
+    constructor(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime, address core, address sktEth, uint32 pStakeCommisisons,
+    uint32 valCommissions) 
     CoreRef(core)
     {
+        stkEthAddress = sktEth;
         beaconData.epochsPerTimePeriod = epochsPerTimePeriod; 
         beaconData.slotsPerEpoch = slotsPerEpoch;
         beaconData.secondsPerSlot = secondsPerSlot;
         beaconData.genesisTime = genesisTime;
+        pStkCommisison = pStakeCommisisons;
+        valCommission = valCommissions;
     }
     
      function getCurrentTimePeriod()
@@ -83,6 +89,10 @@ contract Oracle is IOracle, CoreRef  {
     function getBeaconData() external view returns (uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime){
         return(beaconData.epochsPerTimePeriod,beaconData.slotsPerEpoch,beaconData.secondsPerSlot,beaconData.genesisTime);
     }
+
+    function pricePerShare() external view returns (uint256){
+        return(IStkEth(stkEthAddress).totalSupply()/totalPooledEther);
+    }
     
     function _getFrameFirstEpochId(uint256 _epochId, BeaconData memory _beaconSpec) internal view returns (uint256) {
         return _epochId / _beaconSpec.epochsPerTimePeriod * _beaconSpec.epochsPerTimePeriod;
@@ -96,8 +106,13 @@ contract Oracle is IOracle, CoreRef  {
         return lastCompletedEpochId;    
     }
     
-    function updateQuorom(uint32 latestQuorom) external{
+    function updateQuorom(uint32 latestQuorom) external onlyGovernor{
         quorom = latestQuorom;
+    }
+
+    function updateCommissions(uint32 pStakeCommisisos, uint32 valCommissions) external onlyGovernor{
+        pStakeCommisison = pStakeCommisisos;
+        valCommission = valCommissions;
     }
 
     function addOracleMember(address newOracleMember) external onlyGovernor{
@@ -157,19 +172,27 @@ contract Oracle is IOracle, CoreRef  {
             // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
             // and then respectively mint new stkEth to treasury and validator pool address
             pricePerSharePEth = price;
+            uint256 valEthShare = (valCommissions*priceDifference)/100;
+            uint256 protocolEthShare = (pStkCommisison*priceDifference)/100;
+            IStkEth(stkEthAddress).mint(governor,(valEthShare/price));
+            IStkEth(stkEthAddress).mint(governor,(protocolEthShare/price));
         }
+        totalPooledEther = latestEthBalance;
+        pricePerSharePEth = price;
+        
     }
     
-    function pushData(uint64 latestEthBalance, uint256 latestNonce) external override{
+    
+    function pushData(uint64 latestEthBalance, uint256 latestNonce, uint32 numberOfValidators) external override{
         if(isOralce(msg.sender) == false)
             revert("Not oracle Member");
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
-        require(currentFrameEpochId > lastCompletedEpochId); 
-        require(currentFrameEpochId >= _getFrameFirstEpochId(_getCurrentEpochId(beaconData), beaconData));
-        require(currentFrameEpochId <= _getFrameFirstEpochId(_getCurrentEpochId(beaconData), beaconData) + beaconData.epochsPerTimePeriod);
+        require(currentFrameEpochId > lastCompletedEpochId, "Cannot push to Epoch less that already commited");   
+        require(currentFrameEpochId >= _getFrameFirstEpochId(currentFrameEpochId, beaconData));
+        require(currentFrameEpochId <= _getFrameFirstEpochId(currentFrameEpochId, beaconData) + beaconData.epochsPerTimePeriod);
 
-        require(latestNonce == nonce.current()); 
-        bytes32 candidateId = keccak256(abi.encode(nonce, latestEthBalance));
+        require(latestNonce == nonce.current(), "incorrect Nonce"); 
+        bytes32 candidateId = keccak256(abi.encode(nonce, latestEthBalance, numberOfValidators));
         bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
         require(!submittedVotes[voteId], "Oracles: already voted");
 
@@ -181,10 +204,7 @@ contract Oracle is IOracle, CoreRef  {
         
         uint256 oraclesCount = oracleMember.length;
         if (candidateNewVotes > quorom) {
-            // update total rewards
-            updatePricePershare(latestEthBalance);
-
-            // clean up votes
+             // clean up votes
             delete submittedVotes[voteId];
             for (uint256 i = 0; i < oraclesCount; i++) {
                 delete submittedVotes[keccak256(abi.encode(oracleMember[i], candidateId))];
@@ -193,14 +213,14 @@ contract Oracle is IOracle, CoreRef  {
             // clean up candidate
             nonce.increment();
             delete candidates[candidateId];
-        }
 
-        uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId *
-        beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
-        lastCompletedEpochId = currentFrameEpochId;
+            numberOfVal = numberOfValidators;
+            lastCompletedEpochId = currentFrameEpochId;
+            updatePricePershare(latestEthBalance);
+        }
+            uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId *
+            beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
     }
-    
-    
 
     //DAO
     function updateBeaconChainData(uint64 epochsPerTimePeriod, uint64 slotsPerEpoch, uint64 secondsPerSlot, uint64 genesisTime) external{
