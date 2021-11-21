@@ -26,7 +26,7 @@ contract Oracle is IOracle, CoreRef  {
     uint32 quorom;
     uint256 public override activatedValidators;
     uint256 oracleMemberSize = 0;
-    uint32 pStakeCommisison;
+    uint32 pStakeCommission;
     uint32 valCommission;
 
 
@@ -38,21 +38,22 @@ contract Oracle is IOracle, CoreRef  {
     uint256 public override pricePerShare = 1e18;
     
     constructor(
-        uint64 epochsPerTimePeriod, 
-        uint64 slotsPerEpoch, 
-        uint64 secondsPerSlot, 
-        uint64 genesisTime, 
-        address core, 
-        uint32 pStakeCommisisons,
-        uint32 valCommissions) 
-    CoreRef(core)
+        uint64 _epochsPerTimePeriod, 
+        uint64 _slotsPerEpoch, 
+        uint64 _secondsPerSlot, 
+        uint64 _genesisTime, 
+        address _core, 
+        uint32 _pStakeCommission,
+        uint32 _valCommission) 
+    CoreRef(_core)
     {
-        beaconData.epochsPerTimePeriod = epochsPerTimePeriod; 
-        beaconData.slotsPerEpoch = slotsPerEpoch;
-        beaconData.secondsPerSlot = secondsPerSlot;
-        beaconData.genesisTime = genesisTime;
-        pStakeCommisison = pStakeCommisisons;
-        valCommission = valCommissions;
+        beaconData.epochsPerTimePeriod = _epochsPerTimePeriod; 
+        beaconData.slotsPerEpoch = _slotsPerEpoch;
+        beaconData.secondsPerSlot = _secondsPerSlot;
+        beaconData.genesisTime = _genesisTime;
+        require(_pStakeCommission < BASIS_POINT && _valCommission < BASIS_POINT && (_pStakeCommission + _valCommission) < BASIS_POINT, "Invalid values");
+        pStakeCommisison = _pStakeCommission;
+        valCommission = _valCommission;
     }
     
     function getCurrentTimePeriod()
@@ -113,10 +114,10 @@ contract Oracle is IOracle, CoreRef  {
         quorom = latestQuorom;
     }
 
-    function updateCommissions(uint32 pStakeCommisisos, uint32 valCommissions) external onlyGovernor{
-        require(pStakeCommisison < BASIS_POINT && valCommissions < BASIS_POINT, "Invalid values");
-        pStakeCommisison = pStakeCommisisos;
-        valCommission = valCommissions;
+    function updateCommissions(uint32 _pStakeCommission, uint32 _valCommission) external onlyGovernor{
+        require(_pStakeCommission < BASIS_POINT && _valCommission < BASIS_POINT && (_pStakeCommission + _valCommission) < BASIS_POINT, "Invalid values");
+        pStakeCommission = _pStakeCommission;
+        valCommission = _valCommission;
     }
 
     function addOracleMember(address newOracleMember) external override onlyGovernor{
@@ -182,7 +183,7 @@ contract Oracle is IOracle, CoreRef  {
             // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
             // and then respectively mint new stkEth to treasury and validator pool address
             uint256 valEthShare = (valCommission*deltaEth)/BASIS_POINT;
-            uint256 protocolEthShare = (pStakeCommisison*deltaEth)/BASIS_POINT;
+            uint256 protocolEthShare = (pStakeCommission*deltaEth)/BASIS_POINT;
             mintStkEthForEth(valEthShare, core().validatorPool(), price);
             mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         }
