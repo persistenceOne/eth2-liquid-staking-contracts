@@ -6,18 +6,13 @@ pragma solidity ^0.8.0;
 /// @author Ankit Parashar
 interface IOracle{
 
-    // To do
-    struct NodeData {
-        uint256 price;
-    }
-
     function pricePerShare() external view returns (uint256);
 
     function activatedValidators() external view returns (uint256);
 
-    function addOracleNode(address node) external;
+    function addOracleMember(address newOracleMember) external;
 
-    function oracleNodes() external returns (address[] memory);
+    function removeOracleMember(address oracleMeberToDelete) external;
 
-    function pushData(uint64 latestEthBalance, uint256 latestNonce) external;
+    function pushData(uint256 latestEthBalance, uint256 latestNonce, uint32 numberOfValidators) external;
 }
