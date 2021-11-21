@@ -52,7 +52,7 @@ contract Oracle is IOracle, CoreRef  {
         beaconData.secondsPerSlot = _secondsPerSlot;
         beaconData.genesisTime = _genesisTime;
         require(_pStakeCommission < BASIS_POINT && _valCommission < BASIS_POINT && (_pStakeCommission + _valCommission) < BASIS_POINT, "Invalid values");
-        pStakeCommisison = _pStakeCommission;
+        pStakeCommission = _pStakeCommission;
         valCommission = _valCommission;
     }
     
