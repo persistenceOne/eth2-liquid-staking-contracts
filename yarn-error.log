@@ -1,0 +1,67 @@
+Arguments: 
+  /Users/parashar/.nvm/versions/node/v12.22.1/bin/node /usr/local/Cellar/yarn/1.22.5/libexec/bin/yarn.js add truffle-token-test-utils --save
+
+PATH: 
+  /Users/parashar/.nix-profile/bin:/Users/parashar/Library/Android/sdk/platform-tools:/usr/local/opt/mysql@5.7/bin:/Users/parashar/.nvm/versions/node/v12.22.1/bin:/Users/parashar/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/parashar/Library/Python/2.7/bin:/usr/local/share/dotnet:/opt/X11/bin:/Users/parashar/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Users/parashar/Library/Python/3.8/bin:/Users/parashar/.local/bin:/usr/local/go/bin
+
+Yarn version: 
+  1.22.5
+
+Node version: 
+  12.22.1
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/parashar/Documents/defi/pstake/DeFiLiquidStaking/package.json: Unexpected token } in JSON at position 906
+      at JSON.parse (<anonymous>)
+      at /usr/local/Cellar/yarn/1.22.5/libexec/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/usr/local/Cellar/yarn/1.22.5/libexec/lib/cli.js:310:30)
+      at /usr/local/Cellar/yarn/1.22.5/libexec/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "name": "defiliquidstaking",
+    "version": "1.0.0",
+    "description": "This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.",
+    "main": ".eslintrc.js",
+    "directories": {
+      "test": "test"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/persistenceOne/DeFiLiquidStaking.git"
+    },
+    "devDependencies": {
+      "@nomiclabs/hardhat-ethers": "^2.0.2",
+      "@nomiclabs/hardhat-etherscan": "^2.1.7",
+      "@nomiclabs/hardhat-waffle": "^2.0.1",
+      "@openzeppelin/contracts": "^4.1.0",
+      "chai": "^4.3.4",
+      "ethereum-waffle": "^3.4.0",
+      "ethers": "^5.3.1",
+      "hardhat": "^2.5.0",
+      "prettier": "^2.4.1",
+      "prettier-plugin-solidity": "^1.0.0-beta.18",
+      "solidity-coverage": "^0.7.17"
+    },
+    "dependencies": {
+      "bignumber.js": "^9.0.1",
+      "colors": "^1.4.0",
+      "dotenv": "^10.0.0",
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+      "url": "https://github.com/persistenceOne/DeFiLiquidStaking/issues"
+    },
+    "homepage": "https://github.com/persistenceOne/DeFiLiquidStaking#readme"
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
