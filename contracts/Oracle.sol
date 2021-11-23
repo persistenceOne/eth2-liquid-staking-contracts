@@ -12,6 +12,7 @@ contract Oracle is IOracle, CoreRef  {
     
     uint128 internal constant ETH2_DENOMINATION = 1e9;
     uint256 constant BASIS_POINT = 10000;
+    uint256 public DEPOSIT_LIMIT = 32e18;
 
     struct BeaconData{
         uint64 epochsPerTimePeriod;
@@ -29,6 +30,7 @@ contract Oracle is IOracle, CoreRef  {
     uint32 pStakeCommission;
     uint32 valCommission;
 
+    uint256 beaconEthBalance=0;
 
     address[] oracleMember;
     mapping(bytes32 => uint256) public candidates;
@@ -160,35 +162,31 @@ contract Oracle is IOracle, CoreRef  {
         stkEth().mint(user, stkEthToMint);
     }
 
-    function updatePricePershare(uint256 newEthBalance) internal {
-        uint256 price = ((newEthBalance * 1e18)/ETH2_DENOMINATION)/stkEth().totalSupply();
-        if (price < pricePerShare)
-        {
-            //slashing
+    function slash(uint256 deltaEth) internal {
+        uint256 newSupply = (beaconEthBalance - deltaEth)/pricePerShare;
 
-            // calculate number of stkEth needed to be burnt in order for price per share to remain same.
+        IStakingPool(core().validatorPool()).slash(newSupply);
 
-            uint256 newSupply = newEthBalance/pricePerShare;
-
-            IStakingPool(address(core())).slash(newSupply);
-
-            // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
-            if(newSupply < stkEth().totalSupply()){
-                pricePerShare = newEthBalance/stkEth().totalSupply();
-            }
-
-        }else{
-            uint256 deltaEth = newEthBalance - (pricePerShare * stkEth().totalSupply());
-            // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
-            // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
-            // and then respectively mint new stkEth to treasury and validator pool address
-            uint256 valEthShare = (valCommission*deltaEth)/BASIS_POINT;
-            uint256 protocolEthShare = (pStakeCommission*deltaEth)/BASIS_POINT;
-            mintStkEthForEth(valEthShare, core().validatorPool(), price);
-            mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
+        // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
+        if(newSupply < stkEth().totalSupply()){
+            pricePerShare = (beaconEthBalance - deltaEth)/stkEth().totalSupply();
         }
+    }
 
-        pricePerShare = price;
+    function distributeRewards(uint256 deltaEth) internal {
+        
+        // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
+        // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
+        // and then respectively mint new stkEth to treasury and validator pool address
+        uint256 price = (beaconEthBalance + deltaEth)/stkEth().totalSupply();
+
+        uint256 valEthShare = (valCommission*deltaEth)/BASIS_POINT;
+        uint256 protocolEthShare = (pStakeCommission*deltaEth)/BASIS_POINT;
+        mintStkEthForEth(valEthShare, core().validatorPool(), price);
+        mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
+        
+
+        pricePerShare = (beaconEthBalance + deltaEth)/stkEth().totalSupply();
     }
     
     
@@ -224,9 +222,20 @@ contract Oracle is IOracle, CoreRef  {
             nonce.increment();
             delete candidates[candidateId];
 
+            uint256 rewardBase = beaconEthBalance + (DEPOSIT_LIMIT*(numberOfValidators - activatedValidators));
+
+            if(latestEthBalance > rewardBase){
+                
+                distributeRewards(latestEthBalance - rewardBase);
+
+            }else if(latestEthBalance < rewardBase){
+
+                slash(rewardBase - latestEthBalance);
+            }
+
+            beaconEthBalance = latestEthBalance;
             activatedValidators = numberOfValidators;
             lastCompletedEpochId = currentFrameEpochId;
-            updatePricePershare(latestEthBalance);
         }
         uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId) * beaconData.slotsPerEpoch * beaconData.secondsPerSlot;
     }
