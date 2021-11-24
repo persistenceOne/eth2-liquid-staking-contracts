@@ -18,6 +18,10 @@ interface ICore is IPermissions {
 
     function keysManager() external view returns(address);
 
+    function pstakeTreasury() external view returns(address);
+
+    function validatorPool() external view returns(address);
+
     function set(bytes32 _key, address _address) external;
 
     function coreContract(bytes32 key) external view returns (address);

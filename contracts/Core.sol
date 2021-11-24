@@ -19,6 +19,8 @@ contract Core is Initializable, ICore, Permissions {
     bytes32 public constant ORACLE = keccak256("ORACLE");
     bytes32 public constant WITHDRAWAL_CREDENTIAL = keccak256("WITHDRAWAL_CREDENTIAL");
     bytes32 public constant KEYS_MANAGER = keccak256("KEYS_MANAGER");
+    bytes32 public constant PSTAKE_TREASURY = keccak256("PSTAKE_TREASURY");
+    bytes32 public constant VALIDATOR_POOL = keccak256("VALIDATOR_POOL");
 
     mapping(bytes32 => address) public override coreContract;
 
@@ -44,6 +46,14 @@ contract Core is Initializable, ICore, Permissions {
 
     function keysManager() external view override returns(address) {
         return coreContract[KEYS_MANAGER];
+    }
+
+    function pstakeTreasury() external view override returns(address) {
+        return coreContract[PSTAKE_TREASURY];
+    }
+
+    function validatorPool() external view override returns(address) {
+        return coreContract[VALIDATOR_POOL];
     }
 
     function set(bytes32 _key, address _address) external override onlyGovernor {

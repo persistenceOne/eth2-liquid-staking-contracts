@@ -1,28 +1,38 @@
 {
   "name": "defiliquidstaking",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.",
+  "main": ".eslintrc.js",
+  "directories": {
+    "test": "test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/persistenceOne/DeFiLiquidStaking.git"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.7",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.1.0",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.3.1",
+    "hardhat": "^2.5.0",
+    "prettier": "^2.4.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.18",
+    "solidity-coverage": "^0.7.17"
+  },
+  "dependencies": {
+    "bignumber.js": "^9.0.1",
+    "colors": "^1.4.0",
+    "dotenv": "^10.0.0",
+    "truffle-token-test-utils": "^1.0.0"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/persistenceOne/DeFiLiquidStaking/issues"
   },
-  "homepage": "https://github.com/persistenceOne/DeFiLiquidStaking#readme",
-  "dependencies": {
-    "@nomiclabs/hardhat-etherscan": "^2.1.7",
-    "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "@openzeppelin/contracts": "^4.3.2",
-    "dotenv": "^10.0.0",
-    "hardhat": "^2.6.7",
-    "hardhat-gas-reporter": "^1.0.4",
-    "solidity-coverage": "^0.7.17"
-  }
+  "homepage": "https://github.com/persistenceOne/DeFiLiquidStaking#readme"
 }
