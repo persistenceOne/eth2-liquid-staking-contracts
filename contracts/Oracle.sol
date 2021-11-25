@@ -121,8 +121,7 @@ contract Oracle is IOracle, CoreRef  {
     }
 
     function addOracleMember(address newOracleMember) external override onlyGovernor{
-        if(EnumerableSet.add(oracleMember, newOracleMember)==true)
-        else
+        if(EnumerableSet.add(oracleMember, newOracleMember)==false)
         revert("Oracle member already present");
     }
     
