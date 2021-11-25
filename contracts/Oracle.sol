@@ -2,12 +2,14 @@ pragma solidity ^0.8.0;
 
 // import "./CoreRef.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IStkEth.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IStakingPool.sol";
 import "./CoreRef.sol";
 
 contract Oracle is IOracle, CoreRef  {
+    using EnumerableSet for EnumerableSet.AddressSet;
     using Counters for Counters.Counter;
     
     uint128 internal constant ETH2_DENOMINATION = 1e9;
@@ -26,16 +28,16 @@ contract Oracle is IOracle, CoreRef  {
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
     uint256 public override activatedValidators;
-    uint256 oracleMemberSize = 0;
     uint32 pStakeCommission;
     uint32 valCommission;
 
     uint256 beaconEthBalance=0;
 
-    address[] oracleMember;
     mapping(bytes32 => uint256) public candidates;
     mapping(bytes32 => bool) private submittedVotes;   
     BeaconData beaconData;
+
+    EnumerableSet.AddressSet private oracleMember;
 
     uint256 public override pricePerShare = 1e18;
     
@@ -78,13 +80,9 @@ contract Oracle is IOracle, CoreRef  {
     function currentNonce() external view returns (uint256){
         return nonce.current();
     }
-
-    function numberOfOracleNodes() external view returns (uint256){
-        return oracleMemberSize;
-    }
     
-    function oracleMembers() external view returns (address[] memory){
-        return oracleMember;
+    function oracleMemberLength() public view returns (uint256){
+        return EnumerableSet.length(oracleMember);
     }
     
     function Quorom() external view returns (uint32){
@@ -123,38 +121,21 @@ contract Oracle is IOracle, CoreRef  {
     }
 
     function addOracleMember(address newOracleMember) external override onlyGovernor{
-        oracleMember.push(newOracleMember);
-        oracleMemberSize++;
+        if(EnumerableSet.add(oracleMember, newOracleMember)==true)
+        else
+        revert("Oracle member already present");
     }
     
     function removeOracleMember(address oracleMeberToDelete) external override onlyGovernor{
-        if (oracleMember[oracleMemberSize-1] == oracleMeberToDelete)
-        oracleMemberSize = oracleMemberSize -1;
-        
-        address prev = oracleMember[oracleMemberSize-1];
-        uint256 i;
-        for (i=oracleMemberSize-2; i>=0 && oracleMember[i]!=oracleMeberToDelete; i--)
-        {
-            address curr = oracleMember[i];
-            oracleMember[i] = prev;
-            prev = curr;
-        }
- 
-        if (i < 0)
-        revert("Oracle member not found");
- 
-        oracleMember[i] = prev;
-        oracleMemberSize--;
+        if (EnumerableSet.contains(oracleMember, oracleMeberToDelete)==false)
+        revert("Oracle member not present");
+        else
+        EnumerableSet.remove(oracleMember, oracleMeberToDelete);
     }
     
     function isOralce(address member) public view returns(bool)
     {
-        for(uint i=0; i <= oracleMemberSize; i++)
-        {
-            if(member == oracleMember[i])
-            return true;
-        }
-        return false;
+        return(EnumerableSet.contains(oracleMember, member));
     }
     
     function mintStkEthForEth(uint256 amount, address user, uint256 newPricePerShare) internal {
@@ -209,13 +190,12 @@ contract Oracle is IOracle, CoreRef  {
         submittedVotes[voteId] = true;
         uint256 candidateNewVotes = candidates[candidateId]+1;
         candidates[candidateId] = candidateNewVotes;
-        
-        uint256 oraclesCount = oracleMember.length;
+        uint256 oracleMemberSize = oracleMemberLength();
         if (candidateNewVotes > quorom) {
              // clean up votes
             delete submittedVotes[voteId];
-            for (uint256 i = 0; i < oraclesCount; i++) {
-                delete submittedVotes[keccak256(abi.encode(oracleMember[i], candidateId))];
+            for (uint256 i = 0; i < oracleMemberSize; i++) {
+                delete submittedVotes[keccak256(abi.encode(EnumerableSet.at(oracleMember, i), candidateId))];
             }
 
             // clean up candidate
