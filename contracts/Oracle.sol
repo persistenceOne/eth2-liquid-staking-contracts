@@ -106,7 +106,7 @@ contract Oracle is IOracle, CoreRef  {
     }
 
      function getTotalEther() external view returns (uint256){
-        return pricePerShare * stkEth().totalSupply();    
+        return beaconEthBalance;    
     }
     
     function updateQuorom(uint32 latestQuorom) external onlyGovernor{
@@ -142,14 +142,15 @@ contract Oracle is IOracle, CoreRef  {
         stkEth().mint(user, stkEthToMint);
     }
 
-    function slash(uint256 deltaEth) internal {
-        uint256 newSupply = (beaconEthBalance - deltaEth)/pricePerShare;
+    function slash(uint256 deltaEth, uint256 rewardBase) internal {
+        uint256 newSupply = (rewardBase - deltaEth)/pricePerShare;
+        
 
         IStakingPool(core().validatorPool()).slash(newSupply);
 
         // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
         if(newSupply < stkEth().totalSupply()){
-            pricePerShare = (beaconEthBalance - deltaEth)/stkEth().totalSupply();
+            pricePerShare = (rewardBase - deltaEth)/stkEth().totalSupply();
         }
     }
 
@@ -209,7 +210,7 @@ contract Oracle is IOracle, CoreRef  {
 
             }else if(latestEthBalance < rewardBase){
 
-                slash(rewardBase - latestEthBalance);
+                slash(rewardBase - latestEthBalance, rewardBase);
             }
 
             beaconEthBalance = latestEthBalance;
