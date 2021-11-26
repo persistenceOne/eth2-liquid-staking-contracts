@@ -30,14 +30,14 @@ describe("Oracle", function () {
     [defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, oracle5] =
       await ethers.getSigners();
 
-	let StakingPool = await ethers.getContractFactory("DummyStakingPool");
-	let stakingPool = await StakingPool.deploy();
+    let StakingPool = await ethers.getContractFactory("DummyStakingPool");
+    let stakingPool = await StakingPool.deploy();
 
     let Core = await ethers.getContractFactory("Core");
     this.core = await Core.deploy();
 
     await this.core.init();
-	await this.core.set(await this.core.VALIDATOR_POOL(), stakingPool.address);
+    await this.core.set(await this.core.VALIDATOR_POOL(), stakingPool.address);
     let Oracle = await ethers.getContractFactory("Oracle");
 
     this.oracle = await Oracle.deploy(
@@ -113,29 +113,34 @@ describe("Oracle", function () {
   });
 
   it("Reaches Quorom", async function () {
-    
-        await this.oracle.updateQuorom(2);
-    
-        let nonce = await this.oracle.currentNonce()
-    
-        await expect(this.oracle.connect(user1).pushData(1, nonce, 5)).to.be.revertedWith("Not oracle Member");
-    
-        await expect(this.oracle.connect(oracle1).pushData(1, nonce+1, 5)).to.be.revertedWith("incorrect Nonce");
-    
-        await this.oracle.connect(oracle1).pushData(1, nonce, 5);
-    
-        await expect(this.oracle.connect(oracle1).pushData(1, nonce, 5)).to.be.revertedWith("Oracles: already voted");
-    
-        await this.oracle.addOracleMember(oracle2.address);
-        await this.oracle.connect(oracle2).pushData(1, nonce, 5);
+    await this.oracle.updateQuorom(2);
 
-        console.log((await this.oracle.currentNonce()).toString()) //Printing correct nonce
-        expect((await this.oracle.currentNonce()).toString()).to.equal(nonce.toString());
+    let nonce = await this.oracle.currentNonce();
 
-		await this.oracle.connect(oracle3).pushData(1, nonce, 5);
-	
-        expect(await this.oracle.currentNonce()).to.be.equal(nonce+1);
-        expect(await this.oracle.getTotalEther()).to.be.equal(1);
-          
-    });
+    await expect(
+      this.oracle.connect(user1).pushData(1, nonce, 5)
+    ).to.be.revertedWith("Not oracle Member");
+
+    await expect(
+      this.oracle.connect(oracle1).pushData(1, nonce + 1, 5)
+    ).to.be.revertedWith("incorrect Nonce");
+
+    await this.oracle.connect(oracle1).pushData(1, nonce, 5);
+
+    await expect(
+      this.oracle.connect(oracle1).pushData(1, nonce, 5)
+    ).to.be.revertedWith("Oracles: already voted");
+
+    await this.oracle.addOracleMember(oracle2.address);
+    await this.oracle.connect(oracle2).pushData(1, nonce, 5);
+
+    expect((await this.oracle.currentNonce()).toString()).to.equal(
+      nonce.toString()
+    );
+
+    await this.oracle.connect(oracle3).pushData(1, nonce, 5);
+
+    expect(await this.oracle.currentNonce()).to.be.equal(nonce + 1);
+    expect(await this.oracle.getTotalEther()).to.be.equal(1);
+  });
 });
