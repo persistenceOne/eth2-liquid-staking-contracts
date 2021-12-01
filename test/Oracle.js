@@ -1,6 +1,7 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { utils } = require("ethers");
+// const { PSTAKE_TREASURY, VALIDATOR_POOL , ORACLE } = require("Core.sol")
 const { BigNumber, constants } = ethers;
 const { AddressZero, MaxUint256, MaxInt256 } = constants;
 
@@ -27,8 +28,17 @@ describe("Oracle", function () {
 
   before(async function () {
     // setup
-    [defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, oracle5] =
-      await ethers.getSigners();
+    [
+      defaultSigner,
+      user1,
+      user2,
+      oracle1,
+      oracle2,
+      oracle3,
+      oracle4,
+      oracle5,
+      treasury,
+    ] = await ethers.getSigners();
 
     let StakingPool = await ethers.getContractFactory("DummyStakingPool");
     let stakingPool = await StakingPool.deploy();
@@ -38,6 +48,11 @@ describe("Oracle", function () {
 
     await this.core.init();
     await this.core.set(await this.core.VALIDATOR_POOL(), stakingPool.address);
+    await this.core.set(await this.core.PSTAKE_TREASURY(), treasury.address);
+
+    let Issuer = await ethers.getContractFactory("Issuer");
+    this.issuer = await Issuer.deploy(this.core.address, BigInt(1e32), 10);
+
     let Oracle = await ethers.getContractFactory("Oracle");
 
     this.oracle = await Oracle.deploy(
@@ -49,6 +64,11 @@ describe("Oracle", function () {
       pStakeCommisisons,
       valCommissions
     );
+
+    await this.core.set(await this.core.ORACLE(), this.oracle.address);
+
+    await this.core.grantMinter(this.oracle.address);
+    await this.core.grantMinter(this.issuer.address);
   });
 
   it("deploys successfully", async () => {
@@ -98,49 +118,87 @@ describe("Oracle", function () {
     expect(await this.oracle.isOralce(oracle2.address)).to.equal(false);
   });
 
-  it("Updates Beacon Chain Data", async function () {
+  it("Should updates Beacon Chain Data", async function () {
     await expect(
-      this.oracle.connect(user1).updateBeaconChainData(30, 20, 10, 100)
+      this.oracle.connect(user1).updateBeaconChainData(10, 32, 12, 1616508000)
     ).to.be.revertedWith("CoreRef: Caller is not a governor");
 
-    await this.oracle.updateBeaconChainData(30, 20, 10, 100);
+    await this.oracle.updateBeaconChainData(10, 32, 12, 1616508000);
     let beaconData = await this.oracle.getBeaconData();
 
-    expect(beaconData.epochsPerTimePeriod.toString()).to.equal("30");
-    expect(beaconData.slotsPerEpoch.toString()).to.equal("20");
-    expect(beaconData.secondsPerSlot.toString()).to.equal("10");
-    expect(beaconData.genesisTime.toString()).to.equal("100");
+    expect(beaconData.epochsPerTimePeriod.toString()).to.equal("10");
+    expect(beaconData.slotsPerEpoch.toString()).to.equal("32");
+    expect(beaconData.secondsPerSlot.toString()).to.equal("12");
+    expect(beaconData.genesisTime.toString()).to.equal("1616508000");
   });
 
-  it("Reaches Quorom", async function () {
+  it("Should reaches Quorom", async function () {
+    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+
     await this.oracle.updateQuorom(2);
 
     let nonce = await this.oracle.currentNonce();
 
     await expect(
-      this.oracle.connect(user1).pushData(1, nonce, 5)
+      this.oracle.connect(user1).pushData(32e9, nonce, 1)
     ).to.be.revertedWith("Not oracle Member");
 
     await expect(
-      this.oracle.connect(oracle1).pushData(1, nonce + 1, 5)
-    ).to.be.revertedWith("incorrect Nonce");
-
-    await this.oracle.connect(oracle1).pushData(1, nonce, 5);
+      this.oracle.connect(oracle1).pushData(64e9, nonce, 3)
+    ).to.be.revertedWith("Number of Validators or Balance incorrect");
 
     await expect(
-      this.oracle.connect(oracle1).pushData(1, nonce, 5)
+      this.oracle.connect(oracle1).pushData(32e9, nonce + 1, 1)
+    ).to.be.revertedWith("incorrect Nonce");
+
+    await this.oracle.connect(oracle1).pushData(32e9, nonce, 1);
+
+    await expect(
+      this.oracle.connect(oracle1).pushData(32e9, nonce, 1)
     ).to.be.revertedWith("Oracles: already voted");
 
     await this.oracle.addOracleMember(oracle2.address);
-    await this.oracle.connect(oracle2).pushData(1, nonce, 5);
+    await this.oracle.connect(oracle2).pushData(32e9, nonce, 1);
 
     expect((await this.oracle.currentNonce()).toString()).to.equal(
       nonce.toString()
     );
 
-    await this.oracle.connect(oracle3).pushData(1, nonce, 5);
+    await this.oracle.connect(oracle3).pushData(32e9, nonce, 1);
 
     expect(await this.oracle.currentNonce()).to.be.equal(nonce + 1);
-    expect(await this.oracle.getTotalEther()).to.be.equal(1);
+    expect(await this.oracle.getTotalEther()).to.be.equal(BigInt(32e18));
+  });
+
+  it("Should update commissions", async function () {
+    await expect(this.oracle.updateCommissions(10001, 10)).to.be.revertedWith(
+      "Invalid values"
+    );
+    await expect(this.oracle.updateCommissions(10, 10001)).to.be.revertedWith(
+      "Invalid values"
+    );
+    await expect(this.oracle.updateCommissions(5000, 5000)).to.be.revertedWith(
+      "Invalid values"
+    );
+    await this.oracle.updateCommissions(500, 500);
+  });
+
+  it("Should work in stimulation", async function () {
+    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+
+    let nonce = parseInt(await this.oracle.currentNonce());
+
+    let blockNumBefore = await ethers.provider.getBlockNumber();
+    let blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    let timestampBefore = blockBefore.timestamp;
+
+    await ethers.provider.send("evm_setNextBlockTimestamp", [
+      timestampBefore + 864000,
+    ]);
+    await ethers.provider.send("evm_mine");
+
+    await this.oracle.connect(oracle1).pushData(65e9, nonce, 2);
+    await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
+    await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
   });
 });
