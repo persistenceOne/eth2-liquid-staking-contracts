@@ -1,7 +1,6 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { utils } = require("ethers");
-// const { PSTAKE_TREASURY, VALIDATOR_POOL , ORACLE } = require("Core.sol")
 const { BigNumber, constants } = ethers;
 const { AddressZero, MaxUint256, MaxInt256 } = constants;
 
@@ -23,8 +22,8 @@ describe("Oracle", function () {
   const slotsPerEpoch = 32;
   const secondsPerSlot = 12;
   const genesisTime = 1616508000;
-  let pStakeCommisisons = 200;
-  let valCommissions = 300;
+  const pStakeCommisisons = 200;
+  const valCommissions = 300;
 
   before(async function () {
     // setup
@@ -200,5 +199,13 @@ describe("Oracle", function () {
     await this.oracle.connect(oracle1).pushData(65e9, nonce, 2);
     await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
     await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
+
+    expect(
+      parseInt(await this.oracle.stkEth().balanceOf(stakingPool.address))
+    ).to.equal((valCommissions * 1) / 10000);
+
+    expect(
+      parseInt(await this.oracle.stkEth().balanceOf(treasury.address))
+    ).to.equal((pStakeCommisisons * 1) / 10000);
   });
 });

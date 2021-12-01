@@ -224,11 +224,9 @@ contract Oracle is IOracle, CoreRef {
         // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
         // and then respectively mint new stkEth to treasury and validator pool address
         console.log("STKETH SUPPLY", stkEth().totalSupply());
-                console.log("beaconEthBalance", beaconEthBalance);
-                console.log("deltaEth", deltaEth);
-                console.log("totalSupply", stkEth().totalSupply());
-
-
+        console.log("beaconEthBalance", beaconEthBalance);
+        console.log("deltaEth", deltaEth);
+        console.log("totalSupply", stkEth().totalSupply());
 
         uint256 price = (beaconEthBalance + deltaEth) / stkEth().totalSupply();
         console.log("pricePerShare", price);
@@ -239,8 +237,6 @@ contract Oracle is IOracle, CoreRef {
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = (beaconEthBalance + deltaEth) / stkEth().totalSupply();
-
-
     }
 
     function pushData(

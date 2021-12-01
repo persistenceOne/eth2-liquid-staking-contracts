@@ -11,7 +11,6 @@ const secondsPerSlot = 12;
 const genesisTime = 1616508000;
 const qourom = 2;
 
-
 async function main() {
   const Core = await hre.ethers.getContractFactory("Core");
   const coreContract = await Core.deploy();
@@ -25,11 +24,18 @@ async function main() {
   console.log("StkEth deployed to ", stkEthContact.address);
 
   const Oracle = await hre.ethers.getContractFactory("Oracle");
-  const oraleContract = await Oracle.deploy(epochsPerTimePeriod,slotsPerEpoch, secondsPerSlot, genesisTime, coreContract.address, stkEthContact.address);
+  const oraleContract = await Oracle.deploy(
+    epochsPerTimePeriod,
+    slotsPerEpoch,
+    secondsPerSlot,
+    genesisTime,
+    coreContract.address,
+    stkEthContact.address
+  );
   console.log("Oracle deployed to ", oraleContract.address);
-  
+
   const quorom = await oraleContract.updateQuorom(qourom);
-  console.log("Quorom initialized to ",qourom);
+  console.log("Quorom initialized to ", qourom);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
