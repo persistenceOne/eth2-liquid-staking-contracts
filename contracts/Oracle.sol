@@ -209,34 +209,37 @@ contract Oracle is IOracle, CoreRef {
     }
 
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
-        uint256 newSupply = (rewardBase - deltaEth) / pricePerShare;
 
-        IStakingPool(core().validatorPool()).slash(newSupply);
+        // 
 
+        uint256 stkEthToSlash = deltaEth / pricePerShare;
+
+        uint256 preTotal = stkEth().totalSupply();
+
+        IStakingPool(core().validatorPool()).slash(stkEthToSlash);
+
+        uint256 stkEthBurned = preTotal - stkEth().totalSupply();
         // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
-        if (newSupply < stkEth().totalSupply()) {
-            pricePerShare = (rewardBase - deltaEth) / stkEth().totalSupply();
+        if (stkEthBurned < stkEthToSlash) {
+            deltaEth = deltaEth - (stkEthBurned*pricePerShare/1e18);
+            pricePerShare = (rewardBase - deltaEth) * 1e18 / (activatedValidators*DEPOSIT_LIMIT);
+            console.log("Price per share is: ",pricePerShare);
         }
     }
 
-    function distributeRewards(uint256 deltaEth) internal {
+    function distributeRewards(uint256 deltaEth, uint256 rewardBase) internal {
         // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
         // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
         // and then respectively mint new stkEth to treasury and validator pool address
-        console.log("STKETH SUPPLY", stkEth().totalSupply());
-        console.log("beaconEthBalance", beaconEthBalance);
-        console.log("deltaEth", deltaEth);
-        console.log("totalSupply", stkEth().totalSupply());
 
-        uint256 price = (beaconEthBalance + deltaEth) / stkEth().totalSupply();
-        console.log("pricePerShare", price);
+        uint256 price = (rewardBase + deltaEth) * 1e18 /(activatedValidators*DEPOSIT_LIMIT);
 
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
 
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
-        pricePerShare = (beaconEthBalance + deltaEth) / stkEth().totalSupply();
+        pricePerShare = price;
     }
 
     function pushData(
@@ -305,21 +308,16 @@ contract Oracle is IOracle, CoreRef {
                 "DepositLimit * noOfVal - ActivatedVal: ",
                 DEPOSIT_LIMIT * (numberOfValidators - activatedValidators)
             );
-
+            activatedValidators = numberOfValidators;
             uint256 rewardBase = beaconEthBalance +
                 (DEPOSIT_LIMIT * (numberOfValidators - activatedValidators));
-            console.log("RewardBase", rewardBase);
-            console.log("latestEthBalance", latestEthBalance);
             if (latestEthBalance > rewardBase) {
-                console.log("Code enters in distributeRewards");
-                distributeRewards(latestEthBalance - rewardBase);
+                distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
-                console.log("Code enters in Slashing");
                 slash(rewardBase - latestEthBalance, rewardBase);
             }
 
             beaconEthBalance = latestEthBalance;
-            activatedValidators = numberOfValidators;
             lastCompletedEpochId = currentFrameEpochId;
         }
         uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId) *

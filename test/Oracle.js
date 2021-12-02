@@ -25,6 +25,8 @@ describe("Oracle", function () {
   const pStakeCommisisons = 200;
   const valCommissions = 300;
 
+  let stakingPool, treasury;
+
   before(async function () {
     // setup
     [
@@ -40,7 +42,7 @@ describe("Oracle", function () {
     ] = await ethers.getSigners();
 
     let StakingPool = await ethers.getContractFactory("DummyStakingPool");
-    let stakingPool = await StakingPool.deploy();
+    stakingPool = await StakingPool.deploy();
 
     let Core = await ethers.getContractFactory("Core");
     this.core = await Core.deploy();
@@ -53,6 +55,8 @@ describe("Oracle", function () {
     this.issuer = await Issuer.deploy(this.core.address, BigInt(1e32), 10);
 
     let Oracle = await ethers.getContractFactory("Oracle");
+
+    this.stkEth = await ethers.getContractAt('StkEth' , await this.core.stkEth());
 
     this.oracle = await Oracle.deploy(
       epochsPerTimePeriod,
@@ -199,13 +203,14 @@ describe("Oracle", function () {
     await this.oracle.connect(oracle1).pushData(65e9, nonce, 2);
     await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
     await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
+    let pricePerShare = await this.oracle.pricePerShare();
+    let valEth = utils.parseEther((valCommissions/10000).toString());
+    let pstakeEth = utils.parseEther((pStakeCommisisons/10000).toString());
+    valEth = valEth.mul(utils.parseEther("1")).div(pricePerShare);
+    pstakeEth = pstakeEth.mul(utils.parseEther("1")).div(pricePerShare);
+    console.log(valEth.toString());
+    expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(valEth);
 
-    expect(
-      parseInt(await this.oracle.stkEth().balanceOf(stakingPool.address))
-    ).to.equal((valCommissions * 1) / 10000);
-
-    expect(
-      parseInt(await this.oracle.stkEth().balanceOf(treasury.address))
-    ).to.equal((pStakeCommisisons * 1) / 10000);
+    expect(await this.stkEth.balanceOf(treasury.address)).to.equal(pstakeEth);
   });
 });
