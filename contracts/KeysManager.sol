@@ -30,8 +30,6 @@ contract KeysManager is IKeysManager, CoreRef {
         require(_validator.state == State.INVALID, "KeysManager: validator already exist");        
 
         _validator = validator;
-
-
     }
 
    function _isEmptySigningKey(bytes memory _key) internal pure returns (bool) {

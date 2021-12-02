@@ -204,11 +204,10 @@ describe("Oracle", function () {
     await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
     await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
     let pricePerShare = await this.oracle.pricePerShare();
-    let valEth = utils.parseEther((valCommissions/10000).toString());
-    let pstakeEth = utils.parseEther((pStakeCommisisons/10000).toString());
+    let valEth = utils.parseEther((500/10000).toString());
+    let pstakeEth = utils.parseEther((500/10000).toString());
     valEth = valEth.mul(utils.parseEther("1")).div(pricePerShare);
     pstakeEth = pstakeEth.mul(utils.parseEther("1")).div(pricePerShare);
-    console.log(valEth.toString());
     expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(valEth);
 
     expect(await this.stkEth.balanceOf(treasury.address)).to.equal(pstakeEth);

@@ -212,7 +212,7 @@ contract Oracle is IOracle, CoreRef {
 
         // 
 
-        uint256 stkEthToSlash = deltaEth / pricePerShare;
+        uint256 stkEthToSlash = deltaEth * 1e18 / pricePerShare;
 
         uint256 preTotal = stkEth().totalSupply();
 
@@ -236,7 +236,6 @@ contract Oracle is IOracle, CoreRef {
 
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
-
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = price;
@@ -302,15 +301,11 @@ contract Oracle is IOracle, CoreRef {
             // clean up candidate
             nonce.increment();
             delete candidates[candidateId];
-            console.log("Number of validators", numberOfValidators);
-            console.log("Activated validators", activatedValidators);
-            console.log(
-                "DepositLimit * noOfVal - ActivatedVal: ",
-                DEPOSIT_LIMIT * (numberOfValidators - activatedValidators)
-            );
-            activatedValidators = numberOfValidators;
+            
             uint256 rewardBase = beaconEthBalance +
                 (DEPOSIT_LIMIT * (numberOfValidators - activatedValidators));
+            activatedValidators = numberOfValidators;
+
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
