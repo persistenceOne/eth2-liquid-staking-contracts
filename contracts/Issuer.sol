@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
+import "hardhat/console.sol";
 import "./interfaces/IKeysManager.sol";
 import "./interfaces/IDepositContract.sol";
 import "./interfaces/IIssuer.sol";
@@ -67,8 +68,10 @@ contract Issuer is CoreRef, IIssuer {
         uint256 validatorIndex = _activatedValidators + _pendingValidators;
         if (validatorIndex * 1e4 <= _activatedValidators * (pendingValidatorsLimit + 1e4)) {
             mintStkEthForEth(msg.value, msg.sender);
+            console.log("STKETH SUPPLY", stkEth().totalSupply());
         } else {
             // lock deposit amount until validator activated
+            console.log("not minted", stkEth().totalSupply());
             activations[msg.sender][validatorIndex] = activations[msg.sender][validatorIndex] + msg.value;
         }
 
