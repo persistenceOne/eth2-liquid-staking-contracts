@@ -22,6 +22,8 @@ interface ICore is IPermissions {
 
     function validatorPool() external view returns(address);
 
+    function issuer() external view returns(address);
+
     function set(bytes32 _key, address _address) external;
 
     function coreContract(bytes32 key) external view returns (address);

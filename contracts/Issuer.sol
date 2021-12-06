@@ -3,11 +3,14 @@ pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
 import "hardhat/console.sol";
-
+import "./interfaces/IKeysManager.sol";
+import "./interfaces/IDepositContract.sol";
 
 contract Issuer is CoreRef {
 
     uint256 public constant VALIDATOR_DEPOSIT = 32 ether;
+
+    IDepositContract public constant DEPOSIT_CONTRACT = IDepositContract(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
     uint256 public pendingValidators;
     uint256 public minActivatingDeposit;
@@ -27,7 +30,6 @@ contract Issuer is CoreRef {
 
     }
 
-
     function setMinActivatingDeposit(uint256 _minActivatingDeposit) external onlyGovernor {
         minActivatingDeposit = _minActivatingDeposit;
     }
@@ -36,6 +38,14 @@ contract Issuer is CoreRef {
         require(_pendingValidatorsLimit < 10000, "Issuer: invalid limit");
         pendingValidatorsLimit = _pendingValidatorsLimit;
     }    
+
+    function updatePendingValidator(uint256 newActiveValidators) external {
+
+        require(core().oracle() == msg.sender, "Issuer: Only oracle can update");
+
+        pendingValidators = pendingValidators - newActiveValidators;
+    }
+
 
     function mintStkEthForEth(uint256 amount, address user) internal {
         uint256 stkEthToMint = (amount * 1e18)/stkEth().pricePerShare();
@@ -77,5 +87,22 @@ contract Issuer is CoreRef {
         mintStkEthForEth(amount, _account);
     }
 
+    function depositToEth2(bytes calldata publicKey) external {
+        
+
+        IKeysManager.Validator memory validator = IKeysManager(core().keysManager()).validators(publicKey);
+
+        IKeysManager(core().keysManager()).activateValidator(publicKey);
+
+        pendingValidators = pendingValidators + 1;
+
+        DEPOSIT_CONTRACT.deposit{value: VALIDATOR_DEPOSIT}(
+            publicKey,
+            abi.encodePacked(core().withdrawalCredential()),
+            validator.signature,
+            validator.deposit_root
+        );
+
+    }
 
 }
