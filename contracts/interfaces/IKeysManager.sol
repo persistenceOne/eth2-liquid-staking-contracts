@@ -13,10 +13,12 @@ interface IKeysManager {
         State state;
         bytes signature;
         address nodeOperator;
+        bytes32 deposit_root;
     }
 
     function validators(bytes calldata publicKey) external view returns (Validator memory);
 
     function addValidator(bytes calldata publicKey, Validator calldata validator) external;
 
+    function activateValidator(bytes calldata publicKey) external;
 }
