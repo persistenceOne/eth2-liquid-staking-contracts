@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./ICoreRef.sol";
-
 /// @title KeysManager interface
 /// @author Ankit Parashar
 interface IKeysManager {
