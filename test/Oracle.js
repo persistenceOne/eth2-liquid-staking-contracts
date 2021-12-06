@@ -52,11 +52,14 @@ describe("Oracle", function () {
     await this.core.set(await this.core.PSTAKE_TREASURY(), treasury.address);
 
     let Issuer = await ethers.getContractFactory("Issuer");
-    this.issuer = await Issuer.deploy(this.core.address, BigInt(1e32), 10);
+    this.issuer = await Issuer.deploy(this.core.address, BigInt(1e32), 32);
 
     let Oracle = await ethers.getContractFactory("Oracle");
 
-    this.stkEth = await ethers.getContractAt('StkEth' , await this.core.stkEth());
+    this.stkEth = await ethers.getContractAt(
+      "StkEth",
+      await this.core.stkEth()
+    );
 
     this.oracle = await Oracle.deploy(
       epochsPerTimePeriod,
@@ -74,8 +77,8 @@ describe("Oracle", function () {
     await this.core.grantMinter(this.issuer.address);
   });
 
-  it("deploys successfully", async () => {
-    const address = oracle1.address;
+  it("deploys successfully", async function () {
+    const address = this.oracle.address;
 
     expect(address).to.not.equal("0x0");
     expect(address).to.not.equal("");
@@ -186,30 +189,62 @@ describe("Oracle", function () {
     await this.oracle.updateCommissions(500, 500);
   });
 
-  it("Should work in stimulation", async function () {
-    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+  describe("Should implement distributeRewards", function () {
+    it("Should update Price Per Share", async function () {
+      await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
 
-    let nonce = parseInt(await this.oracle.currentNonce());
+      let nonce = parseInt(await this.oracle.currentNonce());
 
-    let blockNumBefore = await ethers.provider.getBlockNumber();
-    let blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    let timestampBefore = blockBefore.timestamp;
+      let blockNumBefore = await ethers.provider.getBlockNumber();
+      let blockBefore = await ethers.provider.getBlock(blockNumBefore);
+      let timestampBefore = blockBefore.timestamp;
 
-    await ethers.provider.send("evm_setNextBlockTimestamp", [
-      timestampBefore + 864000,
-    ]);
-    await ethers.provider.send("evm_mine");
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        timestampBefore + 864000,
+      ]);
+      await ethers.provider.send("evm_mine");
 
-    await this.oracle.connect(oracle1).pushData(65e9, nonce, 2);
-    await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
-    await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
-    let pricePerShare = await this.oracle.pricePerShare();
-    let valEth = utils.parseEther((500/10000).toString());
-    let pstakeEth = utils.parseEther((500/10000).toString());
-    valEth = valEth.mul(utils.parseEther("1")).div(pricePerShare);
-    pstakeEth = pstakeEth.mul(utils.parseEther("1")).div(pricePerShare);
-    expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(valEth);
+      await this.oracle.connect(oracle1).pushData(65e9, nonce, 2);
+      await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
+      await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
+    });
 
-    expect(await this.stkEth.balanceOf(treasury.address)).to.equal(pstakeEth);
+    it("Should update Treasury Balance", async function () {
+      let pricePerShare = await this.oracle.pricePerShare();
+      let pstakeEth = utils.parseEther((500 / 10000).toString());
+      pstakeEth = pstakeEth.mul(utils.parseEther("1")).div(pricePerShare);
+      expect(await this.stkEth.balanceOf(treasury.address)).to.equal(pstakeEth);
+    });
+
+    it("Should update stakingPool Balance", async function () {
+      let pricePerShare = await this.oracle.pricePerShare();
+      let valEth = utils.parseEther((500 / 10000).toString());
+      valEth = valEth.mul(utils.parseEther("1")).div(pricePerShare);
+      expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(valEth);
+    });
+  });
+
+  describe("Should implement slashing", function () {
+    it("Should slashing work", async function () {
+      let valEth = await this.stkEth.balanceOf(stakingPool.address);
+      let nonce = parseInt(await this.oracle.currentNonce());
+
+      let blockNumBefore = await ethers.provider.getBlockNumber();
+      let blockBefore = await ethers.provider.getBlock(blockNumBefore);
+      let timestampBefore = blockBefore.timestamp;
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        timestampBefore + 864000,
+      ]);
+      await ethers.provider.send("evm_mine");
+
+      await this.oracle.connect(oracle1).pushData(64e9, nonce, 2);
+      await this.oracle.connect(oracle2).pushData(64e9, nonce, 2);
+      await this.oracle.connect(oracle3).pushData(64e9, nonce, 2);
+
+      let pricePerShare = await this.oracle.pricePerShare();
+      let stkEthToSlash = utils.parseEther("1") / pricePerShare;
+      expect(BigInt(await this.stkEth.balanceOf(stakingPool.address))).to.equal(BigInt(valEth-stkEthToSlash));
+    });
   });
 });
