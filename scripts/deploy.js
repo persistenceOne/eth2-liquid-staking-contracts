@@ -3,6 +3,14 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+
+// Start a local node
+
+// npx hardhat node
+
+// Open a new terminal and deploy the smart contract in the localhost network
+
+// npx hardhat run --network localhost scripts/deploy.js
 const hre = require("hardhat");
 
 const epochsPerTimePeriod = 10;
