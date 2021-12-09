@@ -5,6 +5,7 @@ import "./interfaces/ICore.sol";
 import "./Permissions.sol";
 import "./interfaces/IStkEth.sol";
 import "./token/StkEth.sol";
+import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -49,6 +50,7 @@ contract Core is Initializable, ICore, Permissions {
 
     function setWithdrawalCredential(bytes32 withdrawcreds) external onlyGovernor{
         // 0x0100000000000000000000003d80b31a78c30fc628f20b2c89d7ddbf6e53cedc
+        // console.log("WITHDRAWAL_CREDENTIAL_BYTES32", WITHDRAWAL_CREDENTIAL_BYTES32);
         WITHDRAWAL_CREDENTIAL_BYTES32 = withdrawcreds;
     }
 

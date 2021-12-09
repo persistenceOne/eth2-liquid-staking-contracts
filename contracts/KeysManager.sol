@@ -11,9 +11,7 @@ contract KeysManager is IKeysManager, CoreRef {
     uint256 constant public SIGNATURE_LENGTH = 96;
     uint256 constant public VALIDATOR_DEPOSIT = 32 ether;
     bytes32 depositRoot;
-    bytes withdrawlCreds;
-    bytes32 withdrawalCredsBytes32;
-
+    bytes32 withdrawal_credentials;
     constructor(address _core) public
     CoreRef(_core)
     {
@@ -25,15 +23,19 @@ contract KeysManager is IKeysManager, CoreRef {
         return _validators[publicKey];
     }
 
-    function addValidator(bytes calldata publicKey, bytes calldata signature) external override {
+    function addValidator(bytes calldata publicKey, bytes calldata signature, address nodeOperator) external override {
 
         Validator memory _validator = _validators[publicKey];
-
         require(_validator.state == State.INVALID, "KeysManager: validator already exist");        
         // require(_isEmptySigningKey(publicKey), "KeysManager: empty signing key");
         // _validator = validator;
         
         bytes32 depositRoot = verifyDepositDataRoot(publicKey, signature);
+        _validator.state = State.VALID;
+        _validator.signature = signature;
+        _validator.nodeOperator = nodeOperator;
+        _validator.deposit_root = depositRoot;
+
         _validators[publicKey] = _validator;
     }
 
@@ -52,8 +54,8 @@ contract KeysManager is IKeysManager, CoreRef {
         bytes memory amount = to_little_endian_64(uint64(deposit_amount));
         // withdrawalCredsBytes32 = bytes32(uint256(uint160((core().withdrawalCredential()))) << 96);
         // bytes memory withdrawal_credentials = abi.encode(core().withdrawalCredential());
-
-        bytes32 withdrawal_credentials = core().withdrawalCredential();
+        
+        withdrawal_credentials = core().withdrawalCredential();
         // withdrawlCreds =  withdrawal_credentials;
         bytes32 pubkey_root = sha256(abi.encodePacked(pubKey, bytes16(0)));
         bytes32 signature_root = sha256(abi.encodePacked(
@@ -76,15 +78,6 @@ contract KeysManager is IKeysManager, CoreRef {
     function depositRootView() external view returns(bytes32)
     {
         return depositRoot;
-    }
-
-    function withdrawlCredsView() external view returns(bytes memory)
-    {
-        return withdrawlCreds;
-    }
-     function withdrawlCredsViewBytes32() external view returns(bytes32)
-    {
-        return withdrawalCredsBytes32;
     }
 
     function toBytes(address a) public pure returns (bytes memory b){

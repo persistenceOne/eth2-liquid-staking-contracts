@@ -18,7 +18,7 @@ interface IKeysManager {
 
     function validators(bytes calldata publicKey) external view returns (Validator memory);
 
-    function addValidator(bytes calldata publicKey, bytes calldata signature) external;
+    function addValidator(bytes calldata publicKey, bytes calldata signature,  address nodeOperator) external;
 
     function activateValidator(bytes calldata publicKey) external;
 }

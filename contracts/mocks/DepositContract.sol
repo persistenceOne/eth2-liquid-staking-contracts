@@ -13,4 +13,8 @@ contract DummyDepositContract{
     ) external payable{
         //
     }
+
+    function balance() public view returns(uint256) {
+        address(this).balance;
+    }
 }
