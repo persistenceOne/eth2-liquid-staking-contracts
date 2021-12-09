@@ -5,8 +5,9 @@ import "./CoreRef.sol";
 import "hardhat/console.sol";
 import "./interfaces/IKeysManager.sol";
 import "./interfaces/IDepositContract.sol";
+import "./interfaces/IIssuer.sol";
 
-contract Issuer is CoreRef {
+contract Issuer is CoreRef, IIssuer {
 
     uint256 public constant VALIDATOR_DEPOSIT = 32 ether;
 
@@ -49,7 +50,7 @@ contract Issuer is CoreRef {
         pendingValidatorsLimit = _pendingValidatorsLimit;
     }    
 
-    function updatePendingValidator(uint256 newActiveValidators) external {
+    function updatePendingValidator(uint256 newActiveValidators) external override {
 
         require(core().oracle() == msg.sender, "Issuer: Only oracle can update");
 

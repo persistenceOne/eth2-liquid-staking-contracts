@@ -7,6 +7,7 @@ import "./interfaces/IStkEth.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IStakingPool.sol";
 import "./CoreRef.sol";
+import "./interfaces/IIssuer.sol";
 import "hardhat/console.sol";
 
 contract Oracle is IOracle, CoreRef {
@@ -283,6 +284,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 candidateNewVotes = candidates[candidateId] + 1;
         candidates[candidateId] = candidateNewVotes;
         uint256 oracleMemberSize = oracleMemberLength();
+        
         if (candidateNewVotes > quorom) {
             // clean up votes
             delete submittedVotes[voteId];
@@ -304,8 +306,10 @@ contract Oracle is IOracle, CoreRef {
             
             uint256 rewardBase = beaconEthBalance +
                 (DEPOSIT_LIMIT * (numberOfValidators - activatedValidators));
+            if(activatedValidators < numberOfValidators){
+                IIssuer(core().issuer()).updatePendingValidator(numberOfValidators-activatedValidators);
+            }
             activatedValidators = numberOfValidators;
-
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
