@@ -3,16 +3,16 @@ pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
 import "./interfaces/IKeysManager.sol";
-import "hardhat/console.sol";
 
 contract KeysManager is IKeysManager, CoreRef {
-    bytes x;
     mapping(bytes => Validator) public _validators;
 
     uint256 constant public PUBKEY_LENGTH = 48;
     uint256 constant public SIGNATURE_LENGTH = 96;
     uint256 constant public VALIDATOR_DEPOSIT = 32 ether;
-
+    bytes32 depositRoot;
+    bytes withdrawlCreds;
+    bytes32 withdrawalCredsBytes32;
 
     constructor(address _core) public
     CoreRef(_core)
@@ -25,20 +25,15 @@ contract KeysManager is IKeysManager, CoreRef {
         return _validators[publicKey];
     }
 
-    function pub(bytes32 publicKey) external view returns(bytes32 x)
-    {
-        return publicKey;
-    }
+    function addValidator(bytes calldata publicKey, bytes calldata signature) external override {
 
-    function addValidator(bytes calldata publicKey, Validator calldata validator) external override { //pub key and sig
-        x = publicKey;
-        
         Validator memory _validator = _validators[publicKey];
-        
+
         require(_validator.state == State.INVALID, "KeysManager: validator already exist");        
         // require(_isEmptySigningKey(publicKey), "KeysManager: empty signing key");
-        _validator = validator;
-        // validator.deposit_root = verifyDepositDataRoot(publicKey, validator.signature);
+        // _validator = validator;
+        
+        bytes32 depositRoot = verifyDepositDataRoot(publicKey, signature);
         _validators[publicKey] = _validator;
     }
 
@@ -51,26 +46,56 @@ contract KeysManager is IKeysManager, CoreRef {
 
     }
 
-    function verifyDepositDataRoot(bytes calldata pubKey, bytes calldata signature) public view returns(bytes32 depositRoot) {
-        uint256 deposit_amount = 1 ether / 1 gwei;
-        console.log(deposit_amount);
+    function verifyDepositDataRoot(bytes calldata pubKey, bytes calldata signature) internal returns(bytes32) {
+
+        uint256 deposit_amount = VALIDATOR_DEPOSIT / 1 gwei;
         bytes memory amount = to_little_endian_64(uint64(deposit_amount));
-        
+        // withdrawalCredsBytes32 = bytes32(uint256(uint160((core().withdrawalCredential()))) << 96);
+        // bytes memory withdrawal_credentials = abi.encode(core().withdrawalCredential());
+
+        bytes32 withdrawal_credentials = core().withdrawalCredential();
+        // withdrawlCreds =  withdrawal_credentials;
         bytes32 pubkey_root = sha256(abi.encodePacked(pubKey, bytes16(0)));
         bytes32 signature_root = sha256(abi.encodePacked(
             sha256(abi.encodePacked(signature[:64])),
             sha256(abi.encodePacked(signature[64:], bytes32(0)))
         ));
-        bytes32 depositRoot = sha256(abi.encodePacked(
-            sha256(abi.encodePacked(pubkey_root, "0x0100000000000000000000008e35f095545c56b07c942a4f3b055ef1ec4cb148")),
+        bytes32 node = sha256(abi.encodePacked(
+            sha256(abi.encodePacked(pubkey_root, withdrawal_credentials)),
             sha256(abi.encodePacked(amount, bytes24(0), signature_root))
         ));
-
+        require(pubKey.length == 48, "DepositContract: invalid pubkey length");
+        require(signature.length == 96, "DepositContract: invalid signature length");
+        require(withdrawal_credentials.length == 32, "DepositContract: invalid withdrawal_credentials length");
         // Verify computed and expected deposit data roots match
         // require(node == depositRoot, "KeysManager: reconstructed DepositData does not match supplied deposit_data_root");
+        depositRoot = node;
+        return node;
+    }
+
+    function depositRootView() external view returns(bytes32)
+    {
         return depositRoot;
     }
 
+    function withdrawlCredsView() external view returns(bytes memory)
+    {
+        return withdrawlCreds;
+    }
+     function withdrawlCredsViewBytes32() external view returns(bytes32)
+    {
+        return withdrawalCredsBytes32;
+    }
+
+    function toBytes(address a) public pure returns (bytes memory b){
+    assembly {
+        let m := mload(0x40)
+        a := and(a, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+        mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, a))
+        mstore(0x40, add(m, 52))
+        b := m
+   }
+}
     function to_little_endian_64(uint64 value) internal pure returns (bytes memory ret) {
         ret = new bytes(8);
         bytes8 bytesValue = bytes8(value);
@@ -96,8 +121,9 @@ contract KeysManager is IKeysManager, CoreRef {
             k1 := mload(add(_key, 0x20))
             k2 := mload(add(_key, 0x40))
         }
-        return true;
+
         // return 0 == k1 && 0 == (k2 >> ((2 * 32 - PUBKEY_LENGTH) * 8));
+        return true;
     }
 
 }

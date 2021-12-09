@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IDepositContract.sol";
 
-contract DummyDepositContract {
+contract DummyDepositContract{
 
     function deposit(
         bytes calldata pubkey,

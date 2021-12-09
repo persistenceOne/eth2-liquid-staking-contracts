@@ -14,7 +14,7 @@ interface ICore is IPermissions {
 
     function oracle() external view returns(address);
 
-    function withdrawalCredential() external view returns(address);
+    function withdrawalCredential() external view returns(bytes32);
 
     function keysManager() external view returns(address);
 
