@@ -146,9 +146,9 @@ describe("Issuer", function () {
 
     await this.issuer.connect(user1).stake({ value: BigInt(63e18)});
 
-    await this.oracle.connect(oracle1).pushData(64e9, nonce, 2);
-    await this.oracle.connect(oracle2).pushData(64e9, nonce, 2);
-    await this.oracle.connect(oracle3).pushData(64e9, nonce, 2);
+    await this.oracle.connect(oracle1).pushData(BigInt(64e9), nonce, 2);
+    await this.oracle.connect(oracle2).pushData(BigInt(64e9), nonce, 2);
+    await this.oracle.connect(oracle3).pushData(BigInt(64e9), nonce, 2);
  
     expect(totalSupply).to.equal(await this.stkEth.totalSupply());
     await this.issuer.depositToEth2("0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34")
@@ -158,6 +158,5 @@ describe("Issuer", function () {
     expect(totalSupply).to.equal(await this.stkEth.totalSupply());
     let balanceOfDeposit = await this.depositContract.balance()
     console.log("balance", balanceOfDeposit.toString());
-    
   });
 });
