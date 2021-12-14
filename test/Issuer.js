@@ -105,6 +105,8 @@ describe("Issuer", function () {
     );
     await this.core.set(await this.core.ORACLE(), this.oracle.address);
     await this.core.set(await this.core.ISSUER(), this.issuer.address);
+    await this.core.set(await this.core.ISSUER(), this.issuer.address);
+
 
     await this.oracle.updateQuorom(2);
     await this.oracle.addOracleMember(oracle1.address);
@@ -266,6 +268,7 @@ describe("Issuer", function () {
     await this.issuer.depositToEth2(
       "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
     );
+    
     await this.oracle.connect(oracle1).pushData(BigInt(64e9), nonce, 2);
     await this.oracle.connect(oracle2).pushData(BigInt(64e9), nonce, 2);
     await this.oracle.connect(oracle3).pushData(BigInt(64e9), nonce, 2);
@@ -298,7 +301,7 @@ describe("Issuer", function () {
     await this.oracle.connect(oracle1).pushData(BigInt(98e9), nonce, 3);
     await this.oracle.connect(oracle2).pushData(BigInt(98e9), nonce, 3);
     await this.oracle.connect(oracle3).pushData(BigInt(98e9), nonce, 3);
-    // expect(totalSupply).to.equal(await this.stkEth.totalSupply());
+    expect(totalSupply).to.equal(await this.stkEth.totalSupply());
 
     await this.issuer.connect(user1).stake({ value: BigInt(160e18) });
     await this.issuer.depositToEth2(
@@ -342,8 +345,8 @@ describe("Issuer", function () {
     );
     let pricePerShare = await this.stkEth.pricePerShare();
     stkEthToMint = (1e18 * 1e18) / pricePerShare;
-    expect(BigInt(await this.stkEth.balanceOf(user2.address))).to.equal(
-      BigInt(stkEthToMint)
+    expect(parseInt(await this.stkEth.balanceOf(user2.address))).to.equal(
+      parseInt(stkEthToMint)
     );
   });
   it("should not activate with invalid index", async function () {
