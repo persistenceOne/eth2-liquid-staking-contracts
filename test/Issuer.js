@@ -22,8 +22,8 @@ const balanceOf = async (erc20, userAddress) => {
 // }
 const rpcCall = async (callType, params) => {
   return await network.provider.request({
-      method: callType,
-      params: params
+    method: callType,
+    params: params,
   });
 };
 
@@ -35,9 +35,8 @@ const revertToSnapshot = async (snapId) => {
   return await rpcCall("evm_revert", [snapId]);
 };
 
-
 describe("Issuer", function () {
-  let defaultSigner, user1, user2, oracle1, oracle2, oracle3;
+  let defaultSigner, user1, user2, user3, oracle1, oracle2, oracle3;
   let totalSupply = 0;
   let stakingPool, treasury;
   let snapshotId;
@@ -51,7 +50,7 @@ describe("Issuer", function () {
     const pStakeCommisisons = 200;
 
     const valCommissions = 300;
-    [defaultSigner, user1, user2, treasury, oracle1, oracle2, oracle3] =
+    [defaultSigner, user1, user2, user3, treasury, oracle1, oracle2, oracle3] =
       await ethers.getSigners();
 
     let StakingPool = await ethers.getContractFactory("DummyStakingPool");
@@ -107,8 +106,7 @@ describe("Issuer", function () {
     await this.core.set(await this.core.ISSUER(), this.issuer.address);
     await this.core.set(await this.core.ISSUER(), this.issuer.address);
 
-
-    await this.oracle.updateQuorom(2);
+    await this.oracle.updateQuorom(3);
     await this.oracle.addOracleMember(oracle1.address);
     await this.oracle.addOracleMember(oracle2.address);
     await this.oracle.addOracleMember(oracle3.address);
@@ -196,16 +194,14 @@ describe("Issuer", function () {
 
     console.log("depositRootView", await this.keysManager.depositRootView());
     console.log("withdrawlCredsView", await this.core.withdrawalCredential());
-    // console.log("withdrawlCredsViewBytes32", await this.keysManager.withdrawlCredsViewBytes32())
   });
-
 
   beforeEach(async function () {
     snapshotId = await snapshot();
   });
 
   afterEach(async function () {
-      await revertToSnapshot(snapshotId);
+    await revertToSnapshot(snapshotId);
   });
 
   it("deploys successfully", async function () {
@@ -257,10 +253,9 @@ describe("Issuer", function () {
   });
 
   it("should not mint when pending validator limit exceed", async function () {
-    totalSupply = await this.stkEth.totalSupply();
     let nonce = await this.oracle.currentNonce();
 
-    await this.issuer.connect(user1).stake({ value: BigInt(63e18) });
+    await this.issuer.connect(user1).stake({ value: BigInt(64e18) });
 
     await this.issuer.depositToEth2(
       "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
@@ -268,42 +263,24 @@ describe("Issuer", function () {
     await this.issuer.depositToEth2(
       "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
     );
-    
+
     await this.oracle.connect(oracle1).pushData(BigInt(64e9), nonce, 2);
     await this.oracle.connect(oracle2).pushData(BigInt(64e9), nonce, 2);
     await this.oracle.connect(oracle3).pushData(BigInt(64e9), nonce, 2);
-
-    expect(totalSupply).to.equal(await this.stkEth.totalSupply());
+    expect(await this.stkEth.balanceOf(user2.address)).to.equal(0);
   });
 
   it("should not activate when validator is not active", async function () {
     await this.issuer.connect(user1).stake({ value: BigInt(33e18) });
-    await expect(this.issuer.activate(user1.address, 4)).to.be.revertedWith(
+    await expect(this.issuer.activate(user1.address, 1)).to.be.revertedWith(
       "Issuer: validator is not active yet"
     );
   });
 
-  it("should mint when pending validator limit is not exceed", async function () {
-    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
-    await this.issuer.depositToEth2(
-      "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
-    );
+  it("should mint when pending validator limit is not exceeded", async function () {
+    await this.issuer.connect(defaultSigner).setPendingValidatorsLimit(5000); //Validator Index should be within 50% of current validators
 
-    let blockNumBefore = await ethers.provider.getBlockNumber();
-    let blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    let timestampBefore = blockBefore.timestamp;
-
-    await ethers.provider.send("evm_setNextBlockTimestamp", [
-      timestampBefore + 864000,
-    ]);
-    await ethers.provider.send("evm_mine");
-    nonce = await this.oracle.currentNonce();
-    await this.oracle.connect(oracle1).pushData(BigInt(98e9), nonce, 3);
-    await this.oracle.connect(oracle2).pushData(BigInt(98e9), nonce, 3);
-    await this.oracle.connect(oracle3).pushData(BigInt(98e9), nonce, 3);
-    expect(totalSupply).to.equal(await this.stkEth.totalSupply());
-
-    await this.issuer.connect(user1).stake({ value: BigInt(160e18) });
+    await this.issuer.connect(user3).stake({ value: BigInt(258e18) });
     await this.issuer.depositToEth2(
       "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
     );
@@ -320,42 +297,79 @@ describe("Issuer", function () {
       "0x8fb45ee750f417b0653056ba4c0b81c1821303f20bb8310a001a6bf5b6a6c1b67ef96249e83197b378917914ded09e0e"
     );
 
-    blockNumBefore = await ethers.provider.getBlockNumber();
-    blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    timestampBefore = blockBefore.timestamp;
+    await this.issuer.depositToEth2(
+      "0x8d0984d2ac0851de4e47e941fe0147c727a991895538aa42d30458650a0e55c4b45cc4fe10709ed14c6db6add99b4dd9"
+    );
 
-    await ethers.provider.send("evm_setNextBlockTimestamp", [
-      timestampBefore + 864000,
-    ]);
-    await ethers.provider.send("evm_mine");
+    await this.issuer.depositToEth2(
+      "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
+    );
+
+    await this.issuer.depositToEth2(
+      "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
+    );
+
     nonce = await this.oracle.currentNonce();
 
     await this.oracle.connect(oracle1).pushData(BigInt(258e9), nonce, 8);
     await this.oracle.connect(oracle2).pushData(BigInt(258e9), nonce, 8);
     await this.oracle.connect(oracle3).pushData(BigInt(258e9), nonce, 8);
-  });
 
-  it("should mint when pending validator limit is not exceeded", async function () {
-    await this.issuer.setPendingValidatorsLimit(3000);
+    await this.issuer.connect(user3).stake({ value: BigInt(33e18) });
 
-    await this.issuer.connect(user2).stake({ value: BigInt(33e18) });
-
-    await this.issuer.depositToEth2(
-      "0x8d0984d2ac0851de4e47e941fe0147c727a991895538aa42d30458650a0e55c4b45cc4fe10709ed14c6db6add99b4dd9"
-    );
     let pricePerShare = await this.stkEth.pricePerShare();
-    stkEthToMint = (1e18 * 1e18) / pricePerShare;
-    expect(parseInt(await this.stkEth.balanceOf(user2.address))).to.equal(
+    console.log("pricePerShare", pricePerShare);
+    stkEthToMint = (33e18 * 1e18) / pricePerShare;
+    expect(parseInt(await this.stkEth.balanceOf(user3.address))).to.equal(
       parseInt(stkEthToMint)
     );
   });
-  it("should not activate with invalid index", async function () {
-    await expect(this.issuer.activate(user1.address, 4)).to.be.revertedWith(
-      "Issuer: invalid validator index"
-    );
-  });
-  it("should activate", async function () {
-    await this.issuer.connect(user1).stake({ value: BigInt(33e18) });
-    await this.issuer.activate(user1.address, 3);
+  describe("should active correctly", async function () {
+    it("should not activate with invalid index", async function () {
+      await this.issuer.connect(defaultSigner).setPendingValidatorsLimit(8000); //Validator Index should be within 50% of current validators
+
+      await this.issuer.connect(user3).stake({ value: BigInt(258e18) });
+      await this.issuer.depositToEth2(
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
+      );
+      await this.issuer.depositToEth2(
+        "0xa7ada7935ccba746f5b998ddfec51002fc7728d52d1772ef39bb2a60eae9da28d9c1b927032780d5247043d5a39e3301"
+      );
+      await this.issuer.depositToEth2(
+        "0x8b67bf3b5d12dc5d727538b4d9b745aee17a2971beecfc999ad54a53c2827996b4d47460a19f42f350582b86bdb2a2a5"
+      );
+      await this.issuer.depositToEth2(
+        "0x8d11dd32ec39e2ccc2a0084999644f34cfa290e24438d3cd0224504399ace4d83356e497e96bb8172e6fc9450410e628"
+      );
+      await this.issuer.depositToEth2(
+        "0x8fb45ee750f417b0653056ba4c0b81c1821303f20bb8310a001a6bf5b6a6c1b67ef96249e83197b378917914ded09e0e"
+      );
+
+      await this.issuer.depositToEth2(
+        "0x8d0984d2ac0851de4e47e941fe0147c727a991895538aa42d30458650a0e55c4b45cc4fe10709ed14c6db6add99b4dd9"
+      );
+
+      await this.issuer.depositToEth2(
+        "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
+      );
+
+      await this.issuer.depositToEth2(
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
+      );
+
+      nonce = await this.oracle.currentNonce();
+
+      await this.oracle.connect(oracle1).pushData(BigInt(258e9), nonce, 8);
+      await this.oracle.connect(oracle2).pushData(BigInt(258e9), nonce, 8);
+      await this.oracle.connect(oracle3).pushData(BigInt(258e9), nonce, 8);
+
+      await expect(this.issuer.activate(user3.address, 100)).to.be.revertedWith(
+        "Issuer: invalid validator index"
+      );
+
+      it("should activate", async function () {
+        await this.issuer.activate(user3.address, 8);
+      });
+    });
   });
 });

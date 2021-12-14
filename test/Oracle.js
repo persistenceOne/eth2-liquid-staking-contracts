@@ -141,6 +141,11 @@ describe("Oracle", function () {
         "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
         "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
       );
+
+      await this.oracle.addOracleMember(oracle1.address);
+      await this.oracle.addOracleMember(oracle2.address);
+      await this.oracle.addOracleMember(oracle3.address);
+      this.oracle.connect(user1).updateQuorom(3);
   });
 
   beforeEach(async function () {
@@ -161,8 +166,7 @@ describe("Oracle", function () {
   });
 
   it("shouldn't set quorom by a non-governor", async function () {
-    // const address1 = user1.address;
-    await expect(this.oracle.connect(user1).updateQuorom(2)).to.be.revertedWith(
+     expect(await this.oracle.connect(user1).updateQuorom(3)).to.be.revertedWith(
       "CoreRef: Caller is not a governor"
     );
   });
@@ -178,13 +182,12 @@ describe("Oracle", function () {
   });
 
   it("should set quorom by a governor", async function () {
-    await this.oracle.updateQuorom(2);
+    await this.oracle.updateQuorom(3);
 
-    expect(await this.oracle.Quorom()).to.equal(2);
+    expect(await this.oracle.Quorom()).to.equal(3);
   });
 
-  it("should add oracle member correctly", async function () {
-    await this.oracle.addOracleMember(oracle1.address);
+  it("should not add already present oracle member", async function () {
     expect(await this.oracle.isOralce(oracle1.address)).to.equal(true);
     await expect(
       this.oracle.addOracleMember(oracle1.address)
@@ -192,9 +195,7 @@ describe("Oracle", function () {
   });
 
   it("should remove oracle member correctly", async function () {
-    await this.oracle.addOracleMember(oracle2.address);
-    await this.oracle.addOracleMember(oracle3.address);
-    await this.oracle.removeOracleMember(oracle2.address);
+      await this.oracle.removeOracleMember(oracle2.address);
     expect(await this.oracle.isOralce(oracle2.address)).to.equal(false);
   });
 
@@ -212,7 +213,7 @@ describe("Oracle", function () {
     expect(beaconData.genesisTime.toString()).to.equal("1616508000");
   });
 
-  it("Should reaches Quorom", async function () {
+  it("Should reach Quorom", async function () {
     await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
 
     await this.issuer.depositToEth2(
@@ -220,8 +221,6 @@ describe("Oracle", function () {
     );
 
     await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
-
-    await this.oracle.updateQuorom(2);
 
     let nonce = await this.oracle.currentNonce();
 
@@ -243,7 +242,6 @@ describe("Oracle", function () {
       this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce, 1)
     ).to.be.revertedWith("Oracles: already voted");
 
-    await this.oracle.addOracleMember(oracle2.address);
     await this.oracle.connect(oracle2).pushData(BigInt(32e9), nonce, 1);
 
     expect((await this.oracle.currentNonce()).toString()).to.equal(

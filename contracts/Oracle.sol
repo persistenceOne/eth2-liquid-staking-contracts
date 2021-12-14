@@ -310,6 +310,7 @@ contract Oracle is IOracle, CoreRef {
                 IIssuer(core().issuer()).updatePendingValidator(numberOfValidators-activatedValidators);
             }
             activatedValidators = numberOfValidators;
+            console.log(activatedValidators);
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
