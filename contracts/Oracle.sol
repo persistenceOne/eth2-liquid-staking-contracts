@@ -285,7 +285,7 @@ contract Oracle is IOracle, CoreRef {
         candidates[candidateId] = candidateNewVotes;
         uint256 oracleMemberSize = oracleMemberLength();
         
-        if (candidateNewVotes > quorom) {
+        if (candidateNewVotes >= quorom) {
             // clean up votes
             delete submittedVotes[voteId];
 

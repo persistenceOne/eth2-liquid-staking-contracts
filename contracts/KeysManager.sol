@@ -114,9 +114,7 @@ contract KeysManager is IKeysManager, CoreRef {
             k1 := mload(add(_key, 0x20))
             k2 := mload(add(_key, 0x40))
         }
-
-        // return 0 == k1 && 0 == (k2 >> ((2 * 32 - PUBKEY_LENGTH) * 8));
-        return true;
+        return 0 == k1 && 0 == (k2 >> ((2 * 32 - PUBKEY_LENGTH) * 8));
     }
 
 }

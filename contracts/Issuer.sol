@@ -57,7 +57,6 @@ contract Issuer is CoreRef, IIssuer {
         pendingValidators = pendingValidators - newActiveValidators;
     }
 
-
     function mintStkEthForEth(uint256 amount, address user) internal {
         uint256 stkEthToMint = (amount * 1e18)/stkEth().pricePerShare();
         stkEth().mint(user, stkEthToMint);
@@ -79,7 +78,7 @@ contract Issuer is CoreRef, IIssuer {
         console.log("active val", _activatedValidators);
         console.log("val index", validatorIndex);
 
-        if (validatorIndex * 1e4 <= _activatedValidators * (pendingValidatorsLimit + 1e4)) {
+        if (validatorIndex * 1e4 <= _activatedValidators * (pendingValidatorsLimit + 1e4)) { // 10001
             mintStkEthForEth(msg.value, msg.sender);
             console.log("STKETH SUPPLY", stkEth().totalSupply());
         } else {
@@ -107,14 +106,12 @@ contract Issuer is CoreRef, IIssuer {
         IKeysManager(core().keysManager()).activateValidator(publicKey);
 
         pendingValidators = pendingValidators + 1;
-
         DEPOSIT_CONTRACT.deposit{value: VALIDATOR_DEPOSIT}(
             publicKey, //
             abi.encodePacked(core().withdrawalCredential()),
             validator.signature,
             validator.deposit_root
         );
-
-    }
+    }  
 
 }

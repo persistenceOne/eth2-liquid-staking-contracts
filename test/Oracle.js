@@ -27,9 +27,9 @@ describe("Oracle", function () {
 
   let stakingPool, treasury;
   let pricePerShare;
-  
+
   before(async function () {
-    // setup
+    // setup 7406504622
     [
       defaultSigner,
       user1,
@@ -45,25 +45,32 @@ describe("Oracle", function () {
     let StakingPool = await ethers.getContractFactory("DummyStakingPool");
     stakingPool = await StakingPool.deploy();
 
-    let DepositContract = await ethers.getContractFactory("DummyDepositContract");
-    depositContract = await DepositContract.deploy();
+    let DepositContract = await ethers.getContractFactory(
+      "DummyDepositContract"
+    );
+    this.depositContract = await DepositContract.deploy();
 
     let Core = await ethers.getContractFactory("Core");
     this.core = await Core.deploy();
-
     await this.core.init();
-    await this.core.set(await this.core.VALIDATOR_POOL(), stakingPool.address);
-    await this.core.set(await this.core.PSTAKE_TREASURY(), treasury.address);
+
+    let KeysManager = await ethers.getContractFactory("KeysManager");
+    this.keysManager = await KeysManager.deploy(this.core.address);
 
     let Issuer = await ethers.getContractFactory("Issuer");
-    this.issuer = await Issuer.deploy(this.core.address, BigInt(32e32), 1000, depositContract.address);
-
-    let Oracle = await ethers.getContractFactory("Oracle");
+    this.issuer = await Issuer.deploy(
+      this.core.address,
+      BigInt(32e18),
+      1000,
+      this.depositContract.address
+    );
 
     this.stkEth = await ethers.getContractAt(
       "StkEth",
       await this.core.stkEth()
     );
+
+    let Oracle = await ethers.getContractFactory("Oracle");
 
     this.oracle = await Oracle.deploy(
       epochsPerTimePeriod,
@@ -75,10 +82,49 @@ describe("Oracle", function () {
       valCommissions
     );
 
+    await this.core.set(await this.core.VALIDATOR_POOL(), stakingPool.address);
+    await this.core.set(await this.core.PSTAKE_TREASURY(), treasury.address);
+    await this.core.setWithdrawalCredential(
+      "0x0100000000000000000000003d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+    );
+    await this.core.set(
+      await this.core.KEYS_MANAGER(),
+      this.keysManager.address
+    );
     await this.core.set(await this.core.ORACLE(), this.oracle.address);
+    await this.core.set(await this.core.ISSUER(), this.issuer.address);
 
     await this.core.grantMinter(this.oracle.address);
     await this.core.grantMinter(this.issuer.address);
+
+    await this.keysManager
+      .connect(defaultSigner)
+      .addValidator(
+        "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
+        "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+        "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+      );
+    await this.keysManager
+      .connect(defaultSigner)
+      .addValidator(
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+        "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+        "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+      );
+    await this.keysManager
+      .connect(defaultSigner)
+      .addValidator(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+        "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+      );
+    await this.keysManager
+      .connect(defaultSigner)
+      .addValidator(
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+        "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+        "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+      );
   });
 
   it("deploys successfully", async function () {
@@ -145,36 +191,42 @@ describe("Oracle", function () {
   it("Should reaches Quorom", async function () {
     await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
 
+    await this.issuer.depositToEth2(
+      "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
+    );
+
+    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+
     await this.oracle.updateQuorom(2);
 
     let nonce = await this.oracle.currentNonce();
 
     await expect(
-      this.oracle.connect(user1).pushData(32e9, nonce, 1)
+      this.oracle.connect(user1).pushData(BigInt(32e9), nonce, 1)
     ).to.be.revertedWith("Not oracle Member");
 
     await expect(
-      this.oracle.connect(oracle1).pushData(64e9, nonce, 3)
+      this.oracle.connect(oracle1).pushData(BigInt(64e9), nonce, 3)
     ).to.be.revertedWith("Number of Validators or Balance incorrect");
 
     await expect(
-      this.oracle.connect(oracle1).pushData(32e9, nonce + 1, 1)
+      this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce + 1, 1)
     ).to.be.revertedWith("incorrect Nonce");
 
-    await this.oracle.connect(oracle1).pushData(32e9, nonce, 1);
+    await this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce, 1);
 
     await expect(
-      this.oracle.connect(oracle1).pushData(32e9, nonce, 1)
+      this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce, 1)
     ).to.be.revertedWith("Oracles: already voted");
 
     await this.oracle.addOracleMember(oracle2.address);
-    await this.oracle.connect(oracle2).pushData(32e9, nonce, 1);
+    await this.oracle.connect(oracle2).pushData(BigInt(32e9), nonce, 1);
 
     expect((await this.oracle.currentNonce()).toString()).to.equal(
       nonce.toString()
     );
 
-    await this.oracle.connect(oracle3).pushData(32e9, nonce, 1);
+    await this.oracle.connect(oracle3).pushData(BigInt(32e9), nonce, 1);
 
     expect(await this.oracle.currentNonce()).to.be.equal(nonce + 1);
     expect(await this.oracle.getTotalEther()).to.be.equal(BigInt(32e18));
@@ -196,6 +248,9 @@ describe("Oracle", function () {
   describe("Should implement distributeRewards", function () {
     it("Should update Price Per Share", async function () {
       await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+      await this.issuer.depositToEth2(
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
+      );
 
       let nonce = parseInt(await this.oracle.currentNonce());
 
@@ -208,9 +263,9 @@ describe("Oracle", function () {
       ]);
       await ethers.provider.send("evm_mine");
 
-      await this.oracle.connect(oracle1).pushData(65e9, nonce, 2);
-      await this.oracle.connect(oracle2).pushData(65e9, nonce, 2);
-      await this.oracle.connect(oracle3).pushData(65e9, nonce, 2);
+      await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
+      await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
+      await this.oracle.connect(oracle3).pushData(BigInt(65e9), nonce, 2);
     });
 
     it("Should update Treasury Balance", async function () {
@@ -242,15 +297,15 @@ describe("Oracle", function () {
       ]);
       await ethers.provider.send("evm_mine");
 
-      await this.oracle.connect(oracle1).pushData(64e9, nonce, 2);
-      await this.oracle.connect(oracle2).pushData(64e9, nonce, 2);
-      await this.oracle.connect(oracle3).pushData(64e9, nonce, 2);
+      await this.oracle.connect(oracle1).pushData(BigInt(64e9), nonce, 2);
+      await this.oracle.connect(oracle2).pushData(BigInt(64e9), nonce, 2);
+      await this.oracle.connect(oracle3).pushData(BigInt(64e9), nonce, 2);
 
       let newPricePerShare = await this.oracle.pricePerShare();
-      expect(pricePerShare).to.be.above(newPricePerShare); 
+      expect(pricePerShare).to.be.above(newPricePerShare);
 
       let stkEthToSlash = utils.parseEther("1").div(pricePerShare);
-      
+
       // expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(((valEth.sub(stkEthToSlash))));
     });
   });
