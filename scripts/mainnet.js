@@ -25,8 +25,7 @@ async function main() {
   const core = await Core.deploy();
   console.log("Core deployed to ", core.address);
 
-  const initalizeCore = await core.init();
-  console.log("Core initialized", initalizeCore);
+  await core.init();
 
   const stkEth = await hre.ethers.getContractFactory("StkEth");
   const stkEthContact = await stkEth.deploy(core.address);
@@ -82,18 +81,17 @@ async function main() {
   await core.grantMinter(issuer.address);
   console.log("Minter granted to issuer and oracle");
 
-  await keysManager
-  .connect(defaultSigner)
-  .addValidator(
+  await keysManager.addValidator(
     "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
     "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
     "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
   );
 
   await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
-  await this.issuer.depositToEth2(
+  const deposit = await this.issuer.depositToEth2(
     "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
   );
+  console.log("Deposit transaction", deposit);  
 }
 
 // We recommend this pattern to be able to use async/await everywhere
