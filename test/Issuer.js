@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { expect } = require("chai");
 const { utils } = require("ethers");
 const { BigNumber, constants } = ethers;
@@ -20,11 +20,27 @@ const balanceOf = async (erc20, userAddress) => {
 //   let mnemonicWallet = ethers.Wallet.fromMnemonic(mnemonic["m/44'/60'/0'/0/${i}"]);
 //   console.log(mnemonicWallet.privateKey);
 // }
+const rpcCall = async (callType, params) => {
+  return await network.provider.request({
+      method: callType,
+      params: params
+  });
+};
+
+const snapshot = async () => {
+  return await rpcCall("evm_snapshot", []);
+};
+
+const revertToSnapshot = async (snapId) => {
+  return await rpcCall("evm_revert", [snapId]);
+};
+
 
 describe("Issuer", function () {
   let defaultSigner, user1, user2, oracle1, oracle2, oracle3;
   let totalSupply = 0;
   let stakingPool, treasury;
+  let snapshotId;
 
   before(async function () {
     // setup
@@ -180,6 +196,16 @@ describe("Issuer", function () {
     console.log("withdrawlCredsView", await this.core.withdrawalCredential());
     // console.log("withdrawlCredsViewBytes32", await this.keysManager.withdrawlCredsViewBytes32())
   });
+
+
+  beforeEach(async function () {
+    snapshotId = await snapshot();
+  });
+
+  afterEach(async function () {
+      await revertToSnapshot(snapshotId);
+  });
+
   it("deploys successfully", async function () {
     const address = this.issuer.address;
     expect(address).to.not.equal("0x0");

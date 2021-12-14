@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { expect } = require("chai");
 const { utils } = require("ethers");
 const { BigNumber, constants } = ethers;
@@ -13,6 +13,22 @@ const approveMAX = async (erc20, signer, to, amount) => {
 
 const balanceOf = async (erc20, userAddress) => {
   return await erc20.balanceOf(userAddress);
+};
+
+
+const rpcCall = async (callType, params) => {
+  return await network.provider.request({
+      method: callType,
+      params: params
+  });
+};
+
+const snapshot = async () => {
+  return await rpcCall("evm_snapshot", []);
+};
+
+const revertToSnapshot = async (snapId) => {
+  return await rpcCall("evm_revert", [snapId]);
 };
 
 describe("Oracle", function () {
@@ -125,6 +141,14 @@ describe("Oracle", function () {
         "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
         "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
       );
+  });
+
+  beforeEach(async function () {
+    snapshotId = await snapshot();
+  });
+
+  afterEach(async function () {
+      await revertToSnapshot(snapshotId);
   });
 
   it("deploys successfully", async function () {
