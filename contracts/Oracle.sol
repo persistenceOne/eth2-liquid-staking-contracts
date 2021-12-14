@@ -237,6 +237,9 @@ contract Oracle is IOracle, CoreRef {
 
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
+        console.log("valEthShare",valEthShare);
+        console.log("protocolEthShare",protocolEthShare);
+
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = price;
@@ -253,6 +256,9 @@ contract Oracle is IOracle, CoreRef {
             "Number of Validators or Balance incorrect"
         );
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
+        console.log("currentFrameEpochId", currentFrameEpochId);
+        console.log("lastCompletedEpochId", lastCompletedEpochId);
+
         require(
             currentFrameEpochId > lastCompletedEpochId,
             "Cannot push to Epoch less that already commited"
@@ -310,7 +316,8 @@ contract Oracle is IOracle, CoreRef {
                 IIssuer(core().issuer()).updatePendingValidator(numberOfValidators-activatedValidators);
             }
             activatedValidators = numberOfValidators;
-            console.log(activatedValidators);
+            console.log("rewardBase",rewardBase);
+            console.log("latestEthBalance",latestEthBalance);
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
