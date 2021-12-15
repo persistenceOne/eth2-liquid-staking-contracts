@@ -31,6 +31,11 @@ const revertToSnapshot = async (snapId) => {
   return await rpcCall("evm_revert", [snapId]);
 };
 
+const increaseTime = async (seconds) => {
+  await network.provider.send("evm_increaseTime", [seconds])
+  await network.provider.send("evm_mine")
+}
+
 describe("Oracle", function () {
   let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, oracle5;
 
@@ -304,28 +309,45 @@ describe("Oracle", function () {
 
   describe("Should implement slashing", function () {
     it("Should slashing work", async function () {
-      pricePerShare = await this.oracle.pricePerShare();
-      console.log("pricePerShare",pricePerShare);
 
       let nonce = parseInt(await this.oracle.currentNonce());
 
-      await this.issuer.connect(user1).stake({ value: BigInt(64e18) });
+      await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
 
       await this.issuer.depositToEth2(
         "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
       );
+
+      await this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce, 1);
+      await this.oracle.connect(oracle2).pushData(BigInt(32e9), nonce, 1);
+      await this.oracle.connect(oracle3).pushData(BigInt(32e9), nonce, 1);
+
+      await this.issuer.connect(user2).stake({ value: BigInt(32e18) });
+
       await this.issuer.depositToEth2(
         "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
       );
 
-      await this.oracle.connect(oracle1).pushData(BigInt(64e9), nonce, 2);
-      await this.oracle.connect(oracle2).pushData(BigInt(64e9), nonce, 2);
-      await this.oracle.connect(oracle3).pushData(BigInt(64e9), nonce, 2);
+      nonce = parseInt(await this.oracle.currentNonce());
+      await increaseTime(420);
+      await this.oracle.connect(oracle1).pushData(BigInt(66e9), nonce, 2);
+      await this.oracle.connect(oracle2).pushData(BigInt(66e9), nonce, 2);
+      await this.oracle.connect(oracle3).pushData(BigInt(66e9), nonce, 2);
+
+      let pricePerShare = await this.oracle.pricePerShare();
+      console.log("pricePerShare",pricePerShare);
+
+      nonce = parseInt(await this.oracle.currentNonce());
+      await increaseTime(420);
+      await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
+      await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
+      await this.oracle.connect(oracle3).pushData(BigInt(65e9), nonce, 2);
+
 
       let newPricePerShare = await this.oracle.pricePerShare();
       expect(pricePerShare).to.be.above(newPricePerShare);
 
-      let stkEthToSlash = utils.parseEther("1").div(pricePerShare);
+      // let stkEthToSlash = utils.parseEther("1").div(pricePerShare);
 
       // expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(((valEth.sub(stkEthToSlash))));
     });

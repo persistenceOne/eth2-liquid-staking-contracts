@@ -278,7 +278,7 @@ contract Oracle is IOracle, CoreRef {
             activatedValidators <= numberOfValidators,
             "Invalid numberOfValidators"
         );
-        latestEthBalance = latestEthBalance * 1e9;
+        latestEthBalance = latestEthBalance * ETH2_DENOMINATION;
         bytes32 candidateId = keccak256(
             abi.encode(nonce, latestEthBalance, numberOfValidators)
         );
