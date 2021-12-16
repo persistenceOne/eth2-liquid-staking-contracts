@@ -12,6 +12,9 @@ contract KeysManager is IKeysManager, CoreRef {
     uint256 constant public VALIDATOR_DEPOSIT = 32 ether;
     bytes32 depositRoot;
     bytes32 withdrawal_credentials;
+    
+    event AddValidator(bytes indexed publicKey, bytes indexed signature, address indexed nodeOperator);
+    event ActivateValidator(bytes publicKey);
     constructor(address _core) public
     CoreRef(_core)
     {
@@ -37,6 +40,8 @@ contract KeysManager is IKeysManager, CoreRef {
         _validator.deposit_root = depositRoot;
 
         _validators[publicKey] = _validator;
+        emit AddValidator(publicKey, signature, nodeOperator);
+
     }
 
     function activateValidator(bytes calldata publicKey) external override {
@@ -45,6 +50,7 @@ contract KeysManager is IKeysManager, CoreRef {
         Validator storage validator = _validators[publicKey];
         require(validator.state == State.VALID, "KeysManager: Invalid Key");
         validator.state = State.ACTIVATED;
+        emit ActivateValidator(publicKey);
 
     }
 
