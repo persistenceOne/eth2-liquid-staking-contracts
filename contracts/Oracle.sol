@@ -203,7 +203,7 @@ contract Oracle is IOracle, CoreRef {
         if (EnumerableSet.contains(oracleMember, oracleMeberToDelete) == false)
             revert("Oracle member not present");
         else EnumerableSet.remove(oracleMember, oracleMeberToDelete);
-        emit oracleMemberRemoved(oracleMember, oracleMemberLength());
+        emit oracleMemberRemoved(oracleMeberToDelete, oracleMemberLength());
     }
 
     function isOralce(address member) public view returns (bool) {
@@ -222,7 +222,6 @@ contract Oracle is IOracle, CoreRef {
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
 
         // 
-
         uint256 stkEthToSlash = deltaEth * 1e18 / pricePerShare;
 
         uint256 preTotal = stkEth().totalSupply();
