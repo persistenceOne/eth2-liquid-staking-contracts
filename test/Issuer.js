@@ -186,13 +186,6 @@ describe("Issuer", function () {
         "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
         "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
       );
-    await this.keysManager
-      .connect(defaultSigner)
-      .addValidator(
-        "0xacbf72fd32a6baf8a8b35b6598c4b9b5640b0f073d1616be0042dd24b7d28d89249e656caf6298d9a388423a6725f7ed",
-        "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
-        "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
-      );
 
     console.log("depositRootView", await this.keysManager.depositRootView());
     console.log("withdrawlCredsView", await this.core.withdrawalCredential());
@@ -212,6 +205,18 @@ describe("Issuer", function () {
     expect(address).to.not.equal("");
     expect(address).to.not.equal(null);
     expect(address).to.not.equal(undefined);
+  });
+
+  it("should not add validator from a non-permission account", async function () {
+    await expect(this.keysManager
+    .connect(user1)
+    .addValidator(
+      "0xacbf72fd32a6baf8a8b35b6598c4b9b5640b0f073d1616be0042dd24b7d28d89249e656caf6298d9a388423a6725f7ed",
+      "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+      "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+    )).to.be.revertedWith(
+      "Permissions: Caller is not a key admin"
+    );
   });
 
   it("should set minimum activating deposit", async function () {

@@ -32,7 +32,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
     }
 
     modifier onlyKeyAdmin() {
-        require(_core.isKeyAdmin(msg.sender), "Permissions: Caller is not a node operator");
+        require(_core.isKeyAdmin(msg.sender), "Permissions: Caller is not a key admin");
         _;
     }
 

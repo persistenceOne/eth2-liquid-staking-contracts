@@ -11,7 +11,7 @@ abstract contract Permissions is IPermissions, AccessControl {
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant NODE_OPERATOR_ROLE = keccak256("NODE_OPERATOR_ROLE");
     bytes32 public constant KEY_ADMIN_ROLE = keccak256("KEY_ADMIN_ROLE");
-    
+
     constructor(){
         // Appointed as a governor so guardian can have indirect access to revoke ability
         _setupGovernor(address(this));
@@ -48,7 +48,7 @@ abstract contract Permissions is IPermissions, AccessControl {
     }
 
     modifier onlyKeyAdmin() {
-        require(isKeyAdmin(msg.sender), "Permissions: Caller is not a node operator");
+        require(isKeyAdmin(msg.sender), "Permissions: Caller is not a key admin");
         _;
     }
 
