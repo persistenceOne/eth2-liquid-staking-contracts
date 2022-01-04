@@ -22,6 +22,7 @@ contract Core is Initializable, ICore, Permissions {
     bytes32 public constant PSTAKE_TREASURY = keccak256("PSTAKE_TREASURY");
     bytes32 public constant VALIDATOR_POOL = keccak256("VALIDATOR_POOL");    
     bytes32 public constant ISSUER = keccak256("ISSUER");
+
     bytes32 public WITHDRAWAL_CREDENTIAL_BYTES32;
 
     mapping(bytes32 => address) public override coreContract;
@@ -69,7 +70,7 @@ contract Core is Initializable, ICore, Permissions {
     function issuer() external view override returns(address) {
         return coreContract[ISSUER];
     }
-
+    
     function set(bytes32 _key, address _address) external override onlyGovernor {
         coreContract[_key] = _address; 
     }
