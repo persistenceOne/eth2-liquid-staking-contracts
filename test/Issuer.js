@@ -113,6 +113,8 @@ describe("Issuer", function () {
 
     await this.core.grantMinter(this.oracle.address);
     await this.core.grantMinter(this.issuer.address);
+    await this.core.grantKeyAdmin(defaultSigner.address);
+
     await this.keysManager
       .connect(defaultSigner)
       .addValidator(
