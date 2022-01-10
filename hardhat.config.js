@@ -25,22 +25,21 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 module.exports = {
   solidity: "0.8.4",
   networks: {
-    hardhat: {
-      // forking: {
-      //   url: "https://mainnet.infura.io/v3/" + process.env.INFURA_KEY,
-      // },
-      // accounts: {
-      //   mnemonic: process.env.MNEMONIC
-      // }
-      allowUnlimitedContractSize: true,
-    },
-    local: {
-      url: "http://localhost:8545",
-    },
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    // hardhat: {
+    //   // forking: {
+    //   //   url: "https://mainnet.infura.io/v3/" + process.env.INFURA_KEY,
+    //   // },
+    //   // accounts: {
+    //   //   mnemonic: process.env.MNEMONIC
+    //   // }
+    //   allowUnlimitedContractSize: true,
+    // },
+    // local: {
+    //   url: "http://localhost:8545",
+    // },
+    rinkeby: {
+      url: "https://eth-rinkeby.alchemyapi.io/v2/RYejb4WXXjHmxxscJB4qNpIZkXMOXskn",
+      accounts: ["0a0ddf30ecb569d0133c6108d6223a8d793a57e954443864ea8cce6ac25af30a"],
     },
   },
   // gasReporter: {

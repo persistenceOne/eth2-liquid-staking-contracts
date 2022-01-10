@@ -26,7 +26,7 @@ contract KeysManager is IKeysManager, CoreRef {
         return _validators[publicKey];
     }
 
-    function addValidator(bytes calldata publicKey, bytes calldata signature, address nodeOperator) external override {
+    function addValidator(bytes calldata publicKey, bytes calldata signature, address nodeOperator) onlyKeyAdmin external override {
 
         Validator memory _validator = _validators[publicKey];
         require(_validator.state == State.INVALID, "KeysManager: validator already exist");        

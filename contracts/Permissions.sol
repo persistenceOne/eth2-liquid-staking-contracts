@@ -10,6 +10,7 @@ abstract contract Permissions is IPermissions, AccessControl {
     bytes32 public constant GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant NODE_OPERATOR_ROLE = keccak256("NODE_OPERATOR_ROLE");
+    bytes32 public constant KEY_ADMIN_ROLE = keccak256("KEY_ADMIN_ROLE");
 
     constructor(){
         // Appointed as a governor so guardian can have indirect access to revoke ability
@@ -19,6 +20,8 @@ abstract contract Permissions is IPermissions, AccessControl {
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(BURNER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(NODE_OPERATOR_ROLE, GOVERN_ROLE);
+        _setRoleAdmin(KEY_ADMIN_ROLE, GOVERN_ROLE);
+
     }
 
     modifier onlyGovernor() {
@@ -41,6 +44,11 @@ abstract contract Permissions is IPermissions, AccessControl {
 
     modifier onlyNodeOperator() {
         require(isNodeOperator(msg.sender), "Permissions: Caller is not a node operator");
+        _;
+    }
+
+    modifier onlyKeyAdmin() {
+        require(isKeyAdmin(msg.sender), "Permissions: Caller is not a key admin");
         _;
     }
 
@@ -73,6 +81,12 @@ abstract contract Permissions is IPermissions, AccessControl {
     function grantNodeOperator(address nodeOperator) public override onlyGovernor {
         grantRole(NODE_OPERATOR_ROLE, nodeOperator);
     }
+ 
+    /// @notice grants key admin role to address
+    /// @param keyAdmin new keyAdmin
+    function grantKeyAdmin(address keyAdmin) public override onlyGovernor {
+        grantRole(KEY_ADMIN_ROLE, keyAdmin);
+    }
 
     /// @notice grants governor role to address
     /// @param governor new governor
@@ -96,6 +110,12 @@ abstract contract Permissions is IPermissions, AccessControl {
     /// @param nodeOperator ex nodeOperator
     function revokeNodeOperator(address nodeOperator) public override onlyGovernor {
         revokeRole(NODE_OPERATOR_ROLE, nodeOperator);
+    }
+
+    /// @notice revokes key admin role from address
+    /// @param keyAdmin ex keyAdmin
+    function revokeKeyAdmin(address keyAdmin) public override onlyGovernor {
+        revokeRole(KEY_ADMIN_ROLE, keyAdmin);
     }
 
     /// @notice revokes governor role from address
@@ -123,6 +143,13 @@ abstract contract Permissions is IPermissions, AccessControl {
     /// @return true _address is a node operator
     function isNodeOperator(address _address) public view override returns (bool) {
         return hasRole(NODE_OPERATOR_ROLE, _address);
+    }
+
+    /// @notice checks if address is a key admin
+    /// @param _address address to check
+    /// @return true _address is a key admin
+    function isKeyAdmin(address _address) public view override returns (bool) {
+        return hasRole(KEY_ADMIN_ROLE, _address);
     }
 
 

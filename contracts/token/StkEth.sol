@@ -17,6 +17,7 @@ contract StkEth is IStkEth, ERC20, CoreRef {
 
     mapping(address => uint256) public nonces;
 
+    event burnToken(address user, uint256 amount);
 
     constructor (address _core) public 
         CoreRef(_core)
@@ -92,5 +93,6 @@ contract StkEth is IStkEth, ERC20, CoreRef {
 
     function burn(address user, uint256 amount) public override virtual onlyBurner {
         _burn(user, amount);
+        emit burnToken(user, amount);
     }
 }

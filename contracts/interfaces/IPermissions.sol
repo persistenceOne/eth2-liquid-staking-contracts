@@ -17,6 +17,8 @@ interface IPermissions {
 
     function grantNodeOperator(address nodeOperator) external;
 
+    function grantKeyAdmin(address keyAdmin) external;
+
     function revokeGovernor(address governor) external;
 
     function revokeMinter(address minter) external;
@@ -24,6 +26,8 @@ interface IPermissions {
     function revokeBurner(address burner) external;
 
     function revokeNodeOperator(address nodeOperator) external;
+
+    function revokeKeyAdmin(address keyAdmin) external;
 
     // ----------- Getters -----------
 
@@ -34,4 +38,6 @@ interface IPermissions {
     function isBurner(address _address) external view returns (bool);
 
     function isNodeOperator(address _address) external view returns (bool);
+
+    function isKeyAdmin(address _address) external view returns (bool);
 }

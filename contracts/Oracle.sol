@@ -42,7 +42,12 @@ contract Oracle is IOracle, CoreRef {
     EnumerableSet.AddressSet private oracleMember;
 
     uint256 public override pricePerShare = 1e18;
-
+    
+    event quoromUpdated(uint32 indexed latestQuorom, uint256 indexed nonce, uint32 indexed quorom);
+    event oracleMemberAdded(address indexed newOracleMember, uint256 indexed oracleMemberLength);
+    event oracleMemberRemoved(address indexed newOracleMember, uint256 indexed oracleMemberLength);
+    event dataPushed(uint256 indexed latestEthBalance, uint256 indexed latestNonce,uint32 indexed numberOfValidators);
+    event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
     constructor(
         uint64 _epochsPerTimePeriod,
         uint64 _slotsPerEpoch,
@@ -161,6 +166,8 @@ contract Oracle is IOracle, CoreRef {
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
+        //Update here 
+        emit quoromUpdated(latestQuorom,nonce.current(), quorom);
     }
 
     function updateCommissions(uint32 _pStakeCommission, uint32 _valCommission)
@@ -175,6 +182,7 @@ contract Oracle is IOracle, CoreRef {
         );
         pStakeCommission = _pStakeCommission;
         valCommission = _valCommission;
+        emit commissionsUpdated(_pStakeCommission, _valCommission);
     }
 
     function addOracleMember(address newOracleMember)
@@ -184,6 +192,7 @@ contract Oracle is IOracle, CoreRef {
     {
         if (EnumerableSet.add(oracleMember, newOracleMember) == false)
             revert("Oracle member already present");
+        emit oracleMemberAdded(newOracleMember, oracleMemberLength());    
     }
 
     function removeOracleMember(address oracleMeberToDelete)
@@ -194,6 +203,7 @@ contract Oracle is IOracle, CoreRef {
         if (EnumerableSet.contains(oracleMember, oracleMeberToDelete) == false)
             revert("Oracle member not present");
         else EnumerableSet.remove(oracleMember, oracleMeberToDelete);
+        emit oracleMemberRemoved(oracleMeberToDelete, oracleMemberLength());
     }
 
     function isOralce(address member) public view returns (bool) {
@@ -212,7 +222,6 @@ contract Oracle is IOracle, CoreRef {
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
 
         // 
-
         uint256 stkEthToSlash = deltaEth * 1e18 / pricePerShare;
 
         uint256 preTotal = stkEth().totalSupply();
@@ -330,6 +339,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId) *
             beaconData.slotsPerEpoch *
             beaconData.secondsPerSlot;
+        emit dataPushed(latestEthBalance, latestNonce,numberOfValidators);
     }
 
     //DAO
