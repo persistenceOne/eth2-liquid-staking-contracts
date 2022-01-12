@@ -18,5 +18,5 @@ interface IOracle {
         uint32 numberOfValidators
     ) external;
 
-    function activateValidator(bytes calldata _publicKey) external;
+    function activateValidator(bytes32[] calldata _publicKeys, uint32 size) external;
 }

@@ -27,6 +27,7 @@ contract Oracle is IOracle, CoreRef {
     }
 
     uint256 lastCompletedEpochId;
+    uint256 lastValidatorActivation;
     Counters.Counter private nonce;
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
@@ -278,12 +279,13 @@ contract Oracle is IOracle, CoreRef {
         pricePerShare = price;
     }
 
-    function activateValidator(bytes calldata _publicKey) external override {
+    function activateValidator(bytes32[] calldata _publicKeys, uint32 size) external override{
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
-        bytes32 candidateId = keccak256(abi.encode(_publicKey));
-        bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
         require(!submittedVotes[voteId], "Oracles: already voted");
-
+        require(size!=0, "size 0"); 
+        require(now >= lastValidatorActivation + 1 hours, "voted before an hour");
+        bytes32 candidateId = keccak256(abi.encode(_publicKeys));
+        bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
         // mark vote as submitted, update candidate votes number
         submittedVotes[voteId] = true;
         uint256 candidateNewVotes = candidates[candidateId] + 1;
@@ -307,8 +309,8 @@ contract Oracle is IOracle, CoreRef {
             // clean up candidate
             nonce.increment();
             delete candidates[candidateId];
-            key.activateValidator(_publicKey);
-            emit validatorActivated(_publicKey);
+            key.activateValidator(_publicKeys, uint32 size);
+            emit validatorActivated( _publicKeys, uint32 size);
         }
     }
 
