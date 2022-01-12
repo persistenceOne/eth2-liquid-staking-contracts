@@ -54,6 +54,19 @@ contract KeysManager is IKeysManager, CoreRef {
 
     }
 
+       function activateValidator(bytes[] calldata publicKey, uint size ) external override {
+
+        require(msg.sender == core().issuer(), "KeysManager: Only issuer can activate");
+        for(i=0; i<size ; i++){
+            Validator storage validator = _validators[publicKey[i]];
+            require(validator.state == State.VALID, "KeysManager: Invalid Key");
+            validator.state = State.ACTIVATED;
+            emit ActivateValidator(publicKey);
+        }
+
+
+    }
+
     function verifyDepositDataRoot(bytes calldata pubKey, bytes calldata signature) internal returns(bytes32) {
 
         uint256 deposit_amount = VALIDATOR_DEPOSIT / 1 gwei;
