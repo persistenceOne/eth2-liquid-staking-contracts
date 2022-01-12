@@ -8,6 +8,7 @@ import "./interfaces/IOracle.sol";
 import "./interfaces/IStakingPool.sol";
 import "./CoreRef.sol";
 import "./interfaces/IIssuer.sol";
+import "./KeysManager.sol";
 import "hardhat/console.sol";
 
 contract Oracle is IOracle, CoreRef {
@@ -37,28 +38,46 @@ contract Oracle is IOracle, CoreRef {
 
     mapping(bytes32 => uint256) public candidates;
     mapping(bytes32 => bool) private submittedVotes;
-    mapping(address=>address) public _nodesValidators;
 
     BeaconData beaconData;
 
     EnumerableSet.AddressSet private oracleMember;
 
     uint256 public override pricePerShare = 1e18;
-    
-    event quoromUpdated(uint32 indexed latestQuorom, uint256 indexed nonce, uint32 indexed quorom);
-    event oracleMemberAdded(address indexed newOracleMember, uint256 indexed oracleMemberLength);
-    event oracleMemberRemoved(address indexed newOracleMember, uint256 indexed oracleMemberLength);
-    event dataPushed(uint256 indexed latestEthBalance, uint256 indexed latestNonce,uint32 indexed numberOfValidators);
+
+    KeysManager key;
+
+    event quoromUpdated(
+        uint32 indexed latestQuorom,
+        uint256 indexed nonce,
+        uint32 indexed quorom
+    );
+    event oracleMemberAdded(
+        address indexed newOracleMember,
+        uint256 indexed oracleMemberLength
+    );
+    event oracleMemberRemoved(
+        address indexed newOracleMember,
+        uint256 indexed oracleMemberLength
+    );
+    event dataPushed(
+        uint256 indexed latestEthBalance,
+        uint256 indexed latestNonce,
+        uint32 indexed numberOfValidators
+    );
     event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
+
     constructor(
         uint64 _epochsPerTimePeriod,
         uint64 _slotsPerEpoch,
         uint64 _secondsPerSlot,
         uint64 _genesisTime,
         address _core,
+        address _keysManager,
         uint32 _pStakeCommission,
         uint32 _valCommission
     ) CoreRef(_core) {
+        key = KeysManager(_keysManager);
         beaconData.epochsPerTimePeriod = _epochsPerTimePeriod;
         beaconData.slotsPerEpoch = _slotsPerEpoch;
         beaconData.secondsPerSlot = _secondsPerSlot;
@@ -168,8 +187,8 @@ contract Oracle is IOracle, CoreRef {
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
-        //Update here 
-        emit quoromUpdated(latestQuorom,nonce.current(), quorom);
+        //Update here
+        emit quoromUpdated(latestQuorom, nonce.current(), quorom);
     }
 
     function updateCommissions(uint32 _pStakeCommission, uint32 _valCommission)
@@ -194,7 +213,7 @@ contract Oracle is IOracle, CoreRef {
     {
         if (EnumerableSet.add(oracleMember, newOracleMember) == false)
             revert("Oracle member already present");
-        emit oracleMemberAdded(newOracleMember, oracleMemberLength());    
+        emit oracleMemberAdded(newOracleMember, oracleMemberLength());
     }
 
     function removeOracleMember(address oracleMeberToDelete)
@@ -222,9 +241,8 @@ contract Oracle is IOracle, CoreRef {
     }
 
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
-
-        // 
-        uint256 stkEthToSlash = deltaEth * 1e18 / pricePerShare;
+        //
+        uint256 stkEthToSlash = (deltaEth * 1e18) / pricePerShare;
 
         uint256 preTotal = stkEth().totalSupply();
 
@@ -233,9 +251,11 @@ contract Oracle is IOracle, CoreRef {
         uint256 stkEthBurned = preTotal - stkEth().totalSupply();
         // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
         if (stkEthBurned < stkEthToSlash) {
-            deltaEth = deltaEth - (stkEthBurned*pricePerShare/1e18);
-            pricePerShare = (rewardBase - deltaEth) * 1e18 / (activatedValidators*DEPOSIT_LIMIT);
-            console.log("Price per share is: ",pricePerShare);
+            deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
+            pricePerShare =
+                ((rewardBase - deltaEth) * 1e18) /
+                (activatedValidators * DEPOSIT_LIMIT);
+            console.log("Price per share is: ", pricePerShare);
         }
     }
 
@@ -244,25 +264,22 @@ contract Oracle is IOracle, CoreRef {
         // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
         // and then respectively mint new stkEth to treasury and validator pool address
 
-        uint256 price = (rewardBase + deltaEth) * 1e18 /(activatedValidators*DEPOSIT_LIMIT);
+        uint256 price = ((rewardBase + deltaEth) * 1e18) /
+            (activatedValidators * DEPOSIT_LIMIT);
 
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
-        console.log("valEthShare",valEthShare);
-        console.log("protocolEthShare",protocolEthShare);
+        console.log("valEthShare", valEthShare);
+        console.log("protocolEthShare", protocolEthShare);
 
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = price;
     }
 
-       function addValidator(address _validator,address _node, bytes calldata signature) external override
-    {
+    function addValidator(bytes calldata _publicKey) external override {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
-        require(_nodesValidators[_node]==_validator, "Validator already present");
-        bytes32 candidateId = keccak256(
-            abi.encode(_validator, _node, signature)
-        );
+        bytes32 candidateId = keccak256(abi.encode(_publicKey));
         bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
         require(!submittedVotes[voteId], "Oracles: already voted");
 
@@ -289,9 +306,8 @@ contract Oracle is IOracle, CoreRef {
             // clean up candidate
             nonce.increment();
             delete candidates[candidateId];
-            _nodesValidators[_node]=_validator;
-
-    }
+            key.activateValidator(_publicKey);
+        }
     }
 
     function pushData(
@@ -339,7 +355,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 candidateNewVotes = candidates[candidateId] + 1;
         candidates[candidateId] = candidateNewVotes;
         uint256 oracleMemberSize = oracleMemberLength();
-        
+
         if (candidateNewVotes >= quorom) {
             // clean up votes
             delete submittedVotes[voteId];
@@ -358,15 +374,17 @@ contract Oracle is IOracle, CoreRef {
             // clean up candidate
             nonce.increment();
             delete candidates[candidateId];
-            
+
             uint256 rewardBase = beaconEthBalance +
                 (DEPOSIT_LIMIT * (numberOfValidators - activatedValidators));
-            if(activatedValidators < numberOfValidators){
-                IIssuer(core().issuer()).updatePendingValidator(numberOfValidators-activatedValidators);
+            if (activatedValidators < numberOfValidators) {
+                IIssuer(core().issuer()).updatePendingValidator(
+                    numberOfValidators - activatedValidators
+                );
             }
             activatedValidators = numberOfValidators;
-            console.log("rewardBase",rewardBase);
-            console.log("latestEthBalance",latestEthBalance);
+            console.log("rewardBase", rewardBase);
+            console.log("latestEthBalance", latestEthBalance);
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
@@ -379,7 +397,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId) *
             beaconData.slotsPerEpoch *
             beaconData.secondsPerSlot;
-        emit dataPushed(latestEthBalance, latestNonce,numberOfValidators);
+        emit dataPushed(latestEthBalance, latestNonce, numberOfValidators);
     }
 
     //DAO

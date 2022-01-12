@@ -16,5 +16,5 @@ interface IOracle{
 
     function pushData(uint256 latestEthBalance, uint256 latestNonce, uint32 numberOfValidators) external;
 
-    function addValidator(address _validator,address _node, bytes calldata signature) external;
+    function addValidator(bytes calldata _publicKey) external;
 }
