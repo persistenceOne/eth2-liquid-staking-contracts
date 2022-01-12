@@ -37,6 +37,8 @@ contract Oracle is IOracle, CoreRef {
 
     mapping(bytes32 => uint256) public candidates;
     mapping(bytes32 => bool) private submittedVotes;
+    mapping(address=>address) public _nodesValidators;
+
     BeaconData beaconData;
 
     EnumerableSet.AddressSet private oracleMember;
@@ -252,6 +254,44 @@ contract Oracle is IOracle, CoreRef {
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = price;
+    }
+
+       function addValidator(address _validator,address _node, bytes calldata signature) external override
+    {
+        if (isOralce(msg.sender) == false) revert("Not oracle Member");
+        require(_nodesValidators[_node]==_validator, "Validator already present");
+        bytes32 candidateId = keccak256(
+            abi.encode(_validator, _node, signature)
+        );
+        bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
+        require(!submittedVotes[voteId], "Oracles: already voted");
+
+        // mark vote as submitted, update candidate votes number
+        submittedVotes[voteId] = true;
+        uint256 candidateNewVotes = candidates[candidateId] + 1;
+        candidates[candidateId] = candidateNewVotes;
+        uint256 oracleMemberSize = oracleMemberLength();
+
+        if (candidateNewVotes >= quorom) {
+            delete submittedVotes[voteId];
+
+            for (uint256 i = 0; i < oracleMemberSize; i++) {
+                delete submittedVotes[
+                    keccak256(
+                        abi.encode(
+                            EnumerableSet.at(oracleMember, i),
+                            candidateId
+                        )
+                    )
+                ];
+            }
+
+            // clean up candidate
+            nonce.increment();
+            delete candidates[candidateId];
+            _nodesValidators[_node]=_validator;
+
+    }
     }
 
     function pushData(

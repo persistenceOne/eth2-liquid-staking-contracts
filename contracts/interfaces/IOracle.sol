@@ -15,4 +15,6 @@ interface IOracle{
     function removeOracleMember(address oracleMeberToDelete) external;
 
     function pushData(uint256 latestEthBalance, uint256 latestNonce, uint32 numberOfValidators) external;
+
+    function addValidator(address _validator,address _node, bytes calldata signature) external;
 }
