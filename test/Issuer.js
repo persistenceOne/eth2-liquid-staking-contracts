@@ -89,6 +89,7 @@ describe("Issuer", function () {
       secondsPerSlot,
       genesisTime,
       this.core.address,
+      this.keysManager.address,
       pStakeCommisisons,
       valCommissions
     );

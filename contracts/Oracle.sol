@@ -65,6 +65,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 indexed latestNonce,
         uint32 indexed numberOfValidators
     );
+    event validatorActivated(bytes _publicKey);
     event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
 
     constructor(
@@ -277,7 +278,7 @@ contract Oracle is IOracle, CoreRef {
         pricePerShare = price;
     }
 
-    function addValidator(bytes calldata _publicKey) external override {
+    function activateValidator(bytes calldata _publicKey) external override {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
         bytes32 candidateId = keccak256(abi.encode(_publicKey));
         bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
@@ -307,6 +308,7 @@ contract Oracle is IOracle, CoreRef {
             nonce.increment();
             delete candidates[candidateId];
             key.activateValidator(_publicKey);
+            emit validatorActivated(_publicKey);
         }
     }
 

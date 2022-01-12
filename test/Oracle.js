@@ -15,11 +15,10 @@ const balanceOf = async (erc20, userAddress) => {
   return await erc20.balanceOf(userAddress);
 };
 
-
 const rpcCall = async (callType, params) => {
   return await network.provider.request({
-      method: callType,
-      params: params
+    method: callType,
+    params: params,
   });
 };
 
@@ -32,9 +31,9 @@ const revertToSnapshot = async (snapId) => {
 };
 
 const increaseTime = async (seconds) => {
-  await network.provider.send("evm_increaseTime", [seconds])
-  await network.provider.send("evm_mine")
-}
+  await network.provider.send("evm_increaseTime", [seconds]);
+  await network.provider.send("evm_mine");
+};
 
 describe("Oracle", function () {
   let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, oracle5;
@@ -99,6 +98,7 @@ describe("Oracle", function () {
       secondsPerSlot,
       genesisTime,
       this.core.address,
+      this.keysManager.address,
       pStakeCommisisons,
       valCommissions
     );
@@ -148,12 +148,12 @@ describe("Oracle", function () {
         "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
       );
 
-      await this.oracle.addOracleMember(oracle1.address);
-      await this.oracle.addOracleMember(oracle2.address);
-      await this.oracle.addOracleMember(oracle3.address);
+    await this.oracle.addOracleMember(oracle1.address);
+    await this.oracle.addOracleMember(oracle2.address);
+    await this.oracle.addOracleMember(oracle3.address);
 
-      this.oracle.updateQuorom(3);
-      await this.oracle.updateCommissions(500, 500);
+    this.oracle.updateQuorom(3);
+    await this.oracle.updateCommissions(500, 500);
   });
 
   beforeEach(async function () {
@@ -161,7 +161,7 @@ describe("Oracle", function () {
   });
 
   afterEach(async function () {
-      await revertToSnapshot(snapshotId);
+    await revertToSnapshot(snapshotId);
   });
 
   it("deploys successfully", async function () {
@@ -203,7 +203,7 @@ describe("Oracle", function () {
   });
 
   it("should remove oracle member correctly", async function () {
-      await this.oracle.removeOracleMember(oracle2.address);
+    await this.oracle.removeOracleMember(oracle2.address);
     expect(await this.oracle.isOralce(oracle2.address)).to.equal(false);
   });
 
@@ -221,7 +221,47 @@ describe("Oracle", function () {
     expect(beaconData.genesisTime.toString()).to.equal("1616508000");
   });
 
-  it("Should reach Quorom", async function () {
+  it("Should reach Quorom to activate validator", async function () {
+    await this.oracle.updateQuorom(3);
+    await expect(
+      this.oracle
+        .connect(user1)
+        .activateValidator(
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+        )
+    ).to.be.revertedWith("Not oracle Member");
+    await this.oracle
+      .connect(oracle1)
+      .activateValidator(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+    await this.oracle
+      .connect(oracle2)
+      .activateValidator(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+    console.log(val.state);
+
+    await this.oracle
+      .connect(oracle3)
+      .activateValidator(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+    console.log(val.state);
+  });
+
+  it("Should reach Quorom to push data", async function () {
     await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
 
     await this.issuer.depositToEth2(
@@ -295,22 +335,24 @@ describe("Oracle", function () {
         pricePerShare = await this.oracle.pricePerShare();
         let pstakeEth = utils.parseEther((500 / 10000).toString());
         pstakeEth = pstakeEth.mul(utils.parseEther("1")).div(pricePerShare);
-        expect(await this.stkEth.balanceOf(treasury.address)).to.equal(pstakeEth);
+        expect(await this.stkEth.balanceOf(treasury.address)).to.equal(
+          pstakeEth
+        );
       });
-  
+
       it("Should update stakingPool Balance", async function () {
         pricePerShare = await this.oracle.pricePerShare();
         let valEth = utils.parseEther((500 / 10000).toString());
         valEth = valEth.mul(utils.parseEther("1")).div(pricePerShare);
-        expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(valEth);
+        expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(
+          valEth
+        );
       });
     });
-
   });
 
   describe("Should implement slashing", function () {
     it("Should slashing work", async function () {
-
       let nonce = parseInt(await this.oracle.currentNonce());
 
       await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
@@ -336,14 +378,13 @@ describe("Oracle", function () {
       await this.oracle.connect(oracle3).pushData(BigInt(66e9), nonce, 2);
 
       let pricePerShare = await this.oracle.pricePerShare();
-      console.log("pricePerShare",pricePerShare);
+      console.log("pricePerShare", pricePerShare);
 
       nonce = parseInt(await this.oracle.currentNonce());
       await increaseTime(420);
       await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
       await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
       await this.oracle.connect(oracle3).pushData(BigInt(65e9), nonce, 2);
-
 
       let newPricePerShare = await this.oracle.pricePerShare();
       expect(pricePerShare).to.be.above(newPricePerShare);
