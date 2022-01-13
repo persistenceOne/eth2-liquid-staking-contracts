@@ -279,12 +279,8 @@ contract Oracle is IOracle, CoreRef {
         pricePerShare = price;
     }
 
-    function activateValidator(bytes[] memory _publicKeys, uint32 size)
-        external
-        override
-    {
+    function activateValidator(bytes[] memory _publicKeys) external override {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
-        require(size != 0, "size 0");
         require(
             block.timestamp >= lastValidatorActivation + 1 hours,
             "voted before an hour"
@@ -315,7 +311,7 @@ contract Oracle is IOracle, CoreRef {
 
             // clean up candidate
             delete candidates[candidateId];
-            key.activateValidator(_publicKeys, size);
+            key.activateValidator(_publicKeys);
             lastValidatorActivation = block.timestamp;
             emit validatorActivated(_publicKeys);
         }

@@ -138,7 +138,7 @@ contract Issuer is CoreRef, IIssuer {
             core().keysManager()
         ).validators(publicKey);
 
-        // IKeysManager(core().keysManager()).activateValidator(publicKey);
+        IKeysManager(core().keysManager()).depositValidator(publicKey);
 
         pendingValidators = pendingValidators + 1;
         DEPOSIT_CONTRACT.deposit{value: VALIDATOR_DEPOSIT}(

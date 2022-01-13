@@ -20,6 +20,7 @@ contract KeysManager is IKeysManager, CoreRef {
         address indexed nodeOperator
     );
     event ActivateValidator(bytes[] publicKey);
+    event DepositValidator(bytes publicKey);
 
     constructor(address _core) public CoreRef(_core) {}
 
@@ -55,20 +56,31 @@ contract KeysManager is IKeysManager, CoreRef {
         emit AddValidator(publicKey, signature, nodeOperator);
     }
 
-    function activateValidator(bytes[] memory publicKeys, uint256 size)
-        external
-        override
-    {
+    function activateValidator(bytes[] memory publicKeys) external override {
         require(
             msg.sender == core().oracle(),
             "KeysManager: Only issuer can activate"
         );
-        for (uint256 i = 0; i <= publicKeys.length; i++) {
+        for (uint256 i = 0; i < publicKeys.length; i++) {
             Validator storage validator = _validators[publicKeys[i]];
             require(validator.state == State.VALID, "KeysManager: Invalid Key");
             validator.state = State.ACTIVATED;
             emit ActivateValidator(publicKeys);
         }
+    }
+
+    function depositValidator(bytes memory publicKey) external override {
+        require(
+            msg.sender == core().issuer(),
+            "KeysManager: Only issuer can activate"
+        );
+        Validator storage validator = _validators[publicKey];
+        require(
+            validator.state == State.ACTIVATED,
+            "KeysManager: Key not activated"
+        );
+        validator.state = State.DEPOSITED;
+        emit DepositValidator(publicKey);
     }
 
     function verifyDepositDataRoot(
