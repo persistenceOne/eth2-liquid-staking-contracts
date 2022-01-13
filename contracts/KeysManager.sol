@@ -63,7 +63,7 @@ contract KeysManager is IKeysManager, CoreRef {
             msg.sender == core().oracle(),
             "KeysManager: Only issuer can activate"
         );
-        for (uint256 i = 0; i <= size; i++) {
+        for (uint256 i = 0; i <= publicKeys.length; i++) {
             Validator storage validator = _validators[publicKeys[i]];
             require(validator.state == State.VALID, "KeysManager: Invalid Key");
             validator.state = State.ACTIVATED;
