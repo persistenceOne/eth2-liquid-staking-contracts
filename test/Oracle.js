@@ -227,30 +227,77 @@ describe("Oracle", function () {
       this.oracle
         .connect(user1)
         .activateValidator(
-          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+          [
+            "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+            "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+          ],
+          1
         )
     ).to.be.revertedWith("Not oracle Member");
+
+    await this.oracle.updateQuorom(3);
+    await expect(
+      this.oracle
+        .connect(oracle1)
+        .activateValidator(
+          [
+            "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          ],
+          0
+        )
+    ).to.be.revertedWith("size 0");
+
     await this.oracle
       .connect(oracle1)
       .activateValidator(
-        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+        [
+          "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        ],
+        1
       );
+
+    await expect(
+      this.oracle
+        .connect(oracle1)
+        .activateValidator(
+          [
+            "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+            "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+          ],
+          1
+        )
+    ).to.be.revertedWith("Oracles: already voted");
+
     await this.oracle
       .connect(oracle2)
       .activateValidator(
-        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+        [
+          "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        ],
+        1
       );
     val = await this.keysManager
       .connect(user1)
       .validators(
         "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
       );
-    console.log(val.state);
-
+    expect(val.state.toString()).to.equal("1");
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
+      );
+    expect(val.state.toString()).to.equal("1");
     await this.oracle
       .connect(oracle3)
       .activateValidator(
-        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+        [
+          "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        ],
+        1
       );
 
     val = await this.keysManager
@@ -258,7 +305,25 @@ describe("Oracle", function () {
       .validators(
         "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
       );
-    console.log(val.state);
+    expect(val.state.toString()).to.equal("2");
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
+      );
+    expect(val.state.toString()).to.equal("2");
+
+    await expect(
+      this.oracle
+        .connect(oracle1)
+        .activateValidator(
+          [
+            "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+            "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+          ],
+          1
+        )
+    ).to.be.revertedWith("voted before an hour");
   });
 
   it("Should reach Quorom to push data", async function () {

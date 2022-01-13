@@ -316,6 +316,7 @@ contract Oracle is IOracle, CoreRef {
             // clean up candidate
             delete candidates[candidateId];
             key.activateValidator(_publicKeys, size);
+            lastValidatorActivation = block.timestamp;
             emit validatorActivated(_publicKeys);
         }
     }
