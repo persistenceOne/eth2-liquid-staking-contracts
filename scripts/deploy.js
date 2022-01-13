@@ -21,7 +21,7 @@ const valCommissions = 300;
 
 async function main() {
 
-  [treasury] = await hre.ethers.getSigners();
+  [defaultSigner, treasury] = await hre.ethers.getSigners();
 
   const Core = await hre.ethers.getContractFactory("Core");
   const core = await Core.deploy();
@@ -35,8 +35,12 @@ async function main() {
   console.log("StkEth deployed to ", stkEthContact.address);
 
   let DepositContract = await ethers.getContractFactory("DummyDepositContract");
-  depositContract = await DepositContract.deploy();
+  const depositContract = await DepositContract.deploy();
   console.log("DepositContract deployed to ", depositContract.address);
+
+  let KeysManager = await ethers.getContractFactory("KeysManager");
+  const keysManager = await KeysManager.deploy(core.address);
+  console.log("KeysManager deployed to ", keysManager.address);
 
   const Oracle = await hre.ethers.getContractFactory("Oracle");
   const oracle = await Oracle.deploy(
@@ -45,6 +49,7 @@ async function main() {
     secondsPerSlot,
     genesisTime,
     core.address,
+    keysManager.address,
     pStakeCommisisons,
     valCommissions
   );
@@ -52,24 +57,13 @@ async function main() {
 
   const quorom = await oracle.updateQuorom(qourom);
   console.log("Quorom initialized to ", qourom);
-
-  let KeysManager = await ethers.getContractFactory("KeysManager");
-  keysManager = await KeysManager.deploy(core.address);
-  console.log("KeysManager deployed to ", keysManager.address);
-
-  await keysManager.addValidator(
-    "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
-    "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
-    "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
-  );
-  console.log("Validator added");
-
+  
   let Issuer = await ethers.getContractFactory("Issuer");
-  issuer = await Issuer.deploy(core.address, BigInt(32e32), 1000, depositContract.address);
+  const issuer = await Issuer.deploy(core.address, BigInt(32e32), 1000, depositContract.address);
   console.log("Issuer deployed to ", issuer.address);
 
   let StakingPool = await ethers.getContractFactory("DummyStakingPool");
-  stakingPool = await StakingPool.deploy();
+  const stakingPool = await StakingPool.deploy();
   console.log("StakingPool deployed to ", stakingPool.address);
 
   await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
@@ -82,6 +76,9 @@ async function main() {
   await core.grantMinter(oracle.address);
   await core.grantMinter(issuer.address);
   console.log("Minter granted to issuer and oracle");
+
+  await core.grantKeyAdmin(defaultSigner.address);
+  console.log("key admin granted to: ", defaultSigner.address);
 
   await keysManager.addValidator(
     "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",

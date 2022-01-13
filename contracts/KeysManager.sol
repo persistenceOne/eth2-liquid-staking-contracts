@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
 import "./interfaces/IKeysManager.sol";
+import "hardhat/console.sol";
 
 contract KeysManager is IKeysManager, CoreRef {
     mapping(bytes => Validator) public _validators;
@@ -18,7 +19,7 @@ contract KeysManager is IKeysManager, CoreRef {
         bytes indexed signature,
         address indexed nodeOperator
     );
-    event ActivateValidator(bytes32[] publicKey);
+    event ActivateValidator(bytes[] publicKey);
 
     constructor(address _core) public CoreRef(_core) {}
 
@@ -54,19 +55,19 @@ contract KeysManager is IKeysManager, CoreRef {
         emit AddValidator(publicKey, signature, nodeOperator);
     }
 
-    function activateValidator(bytes32[] memory publicKey, uint256 size)
+    function activateValidator(bytes[] memory publicKeys, uint256 size)
         external
         override
     {
         require(
-            msg.sender == core().issuer(),
+            msg.sender == core().oracle(),
             "KeysManager: Only issuer can activate"
         );
-        for (uint i = 0; i < size; i++) {
-            Validator storage validator = _validators[publicKey[i]];
+        for (uint256 i = 0; i <= size; i++) {
+            Validator storage validator = _validators[publicKeys[i]];
             require(validator.state == State.VALID, "KeysManager: Invalid Key");
             validator.state = State.ACTIVATED;
-            emit ActivateValidator(publicKey);
+            emit ActivateValidator(publicKeys);
         }
     }
 

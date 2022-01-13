@@ -66,7 +66,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 indexed latestNonce,
         uint32 indexed numberOfValidators
     );
-    event validatorActivated(bytes32[] _publicKey);
+    event validatorActivated(bytes[] _publicKey);
     event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
 
     constructor(
@@ -279,10 +279,16 @@ contract Oracle is IOracle, CoreRef {
         pricePerShare = price;
     }
 
-    function activateValidator(bytes32[] memory _publicKeys, uint32 size) external override{
+    function activateValidator(bytes[] memory _publicKeys, uint32 size)
+        external
+        override
+    {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
-        require(size!=0, "size 0"); 
-        require(block.timestamp >= lastValidatorActivation + 1 hours, "voted before an hour");
+        require(size != 0, "size 0");
+        require(
+            block.timestamp >= lastValidatorActivation + 1 hours,
+            "voted before an hour"
+        );
         bytes32 candidateId = keccak256(abi.encode(_publicKeys));
         bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
         require(!submittedVotes[voteId], "Oracles: already voted");
@@ -309,8 +315,8 @@ contract Oracle is IOracle, CoreRef {
 
             // clean up candidate
             delete candidates[candidateId];
-            key.activateValidator(_publicKeys,  size);
-            emit validatorActivated( _publicKeys);
+            key.activateValidator(_publicKeys, size);
+            emit validatorActivated(_publicKeys);
         }
     }
 
