@@ -55,8 +55,11 @@ async function main() {
   );
   console.log("Oracle deployed to ", oracle.address);
 
-  const quorom = await oracle.updateQuorom(qourom);
+  await oracle.updateQuorom(qourom);
   console.log("Quorom initialized to ", qourom);
+
+  this.oracle.updateValidatorQuorom(3);
+  console.log("Validator updation Quorom initialized to ", qourom);
   
   let Issuer = await ethers.getContractFactory("Issuer");
   const issuer = await Issuer.deploy(core.address, BigInt(32e32), 1000, depositContract.address);
@@ -86,6 +89,7 @@ async function main() {
     "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
   );
   console.log("Validator added");
+  
 }
 
 // We recommend this pattern to be able to use async/await everywhere

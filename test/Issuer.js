@@ -15,11 +15,6 @@ const balanceOf = async (erc20, userAddress) => {
   return await erc20.balanceOf(userAddress);
 };
 
-// let mnemonic = "local debate close key firm walnut kick cry trash average permit negative false corn grant cluster border coral page april gap conduct column welcome";
-// for(i=0; i<=10;i++){
-//   let mnemonicWallet = ethers.Wallet.fromMnemonic(mnemonic["m/44'/60'/0'/0/${i}"]);
-//   console.log(mnemonicWallet.privateKey);
-// }
 const rpcCall = async (callType, params) => {
   return await network.provider.request({
     method: callType,
@@ -190,6 +185,20 @@ describe("Issuer", function () {
 
     console.log("depositRootView", await this.keysManager.depositRootView());
     console.log("withdrawlCredsView", await this.core.withdrawalCredential());
+
+    await this.oracle.updateQuorom(1);    
+    await this.oracle
+    .connect(oracle1)
+    .activateValidator([
+      "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
+      "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+      "0x8d0984d2ac0851de4e47e941fe0147c727a991895538aa42d30458650a0e55c4b45cc4fe10709ed14c6db6add99b4dd9",
+      "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+      "0x8b67bf3b5d12dc5d727538b4d9b745aee17a2971beecfc999ad54a53c2827996b4d47460a19f42f350582b86bdb2a2a5",
+      "0x8d11dd32ec39e2ccc2a0084999644f34cfa290e24438d3cd0224504399ace4d83356e497e96bb8172e6fc9450410e628",
+      "0x8fb45ee750f417b0653056ba4c0b81c1821303f20bb8310a001a6bf5b6a6c1b67ef96249e83197b378917914ded09e0e",  
+      "0xa7ada7935ccba746f5b998ddfec51002fc7728d52d1772ef39bb2a60eae9da28d9c1b927032780d5247043d5a39e3301",
+    ]);
   });
 
   beforeEach(async function () {
@@ -209,15 +218,15 @@ describe("Issuer", function () {
   });
 
   it("should not add validator from a non-permission account", async function () {
-    await expect(this.keysManager
-    .connect(user1)
-    .addValidator(
-      "0xacbf72fd32a6baf8a8b35b6598c4b9b5640b0f073d1616be0042dd24b7d28d89249e656caf6298d9a388423a6725f7ed",
-      "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
-      "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
-    )).to.be.revertedWith(
-      "Permissions: Caller is not a key admin"
-    );
+    await expect(
+      this.keysManager
+        .connect(user1)
+        .addValidator(
+          "0xacbf72fd32a6baf8a8b35b6598c4b9b5640b0f073d1616be0042dd24b7d28d89249e656caf6298d9a388423a6725f7ed",
+          "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+          "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+        )
+    ).to.be.revertedWith("Permissions: Caller is not a key admin");
   });
 
   it("should set minimum activating deposit", async function () {
@@ -308,7 +317,6 @@ describe("Issuer", function () {
     await this.issuer.depositToEth2(
       "0x8d0984d2ac0851de4e47e941fe0147c727a991895538aa42d30458650a0e55c4b45cc4fe10709ed14c6db6add99b4dd9"
     );
-
     await this.issuer.depositToEth2(
       "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
     );

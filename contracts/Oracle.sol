@@ -31,6 +31,7 @@ contract Oracle is IOracle, CoreRef {
     Counters.Counter private nonce;
     uint64 lastCompletedTimeFrame;
     uint32 quorom;
+    uint32 validatorQuorom;
     uint256 public override activatedValidators;
     uint32 pStakeCommission;
     uint32 valCommission;
@@ -131,6 +132,10 @@ contract Oracle is IOracle, CoreRef {
         return quorom;
     }
 
+    function ValidatorQuorom() external view returns (uint32) {
+        return validatorQuorom;
+    }
+
     function getBeaconData()
         external
         view
@@ -189,8 +194,12 @@ contract Oracle is IOracle, CoreRef {
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
-        //Update here
         emit quoromUpdated(latestQuorom, nonce.current(), quorom);
+    }
+
+    function updateValidatorQuorom(uint32 latestQuorom) external onlyGovernor {
+        require(latestQuorom >= 0, "Quorom less that 0");
+        validatorQuorom = latestQuorom;
     }
 
     function updateCommissions(uint32 _pStakeCommission, uint32 _valCommission)
@@ -295,7 +304,7 @@ contract Oracle is IOracle, CoreRef {
         candidates[candidateId] = candidateNewVotes;
         uint256 oracleMemberSize = oracleMemberLength();
 
-        if (candidateNewVotes >= quorom) {
+        if (candidateNewVotes >= validatorQuorom) {
             delete submittedVotes[voteId];
 
             for (uint256 i = 0; i < oracleMemberSize; i++) {
