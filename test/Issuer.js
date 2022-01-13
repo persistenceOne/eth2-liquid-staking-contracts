@@ -186,7 +186,7 @@ describe("Issuer", function () {
     console.log("depositRootView", await this.keysManager.depositRootView());
     console.log("withdrawlCredsView", await this.core.withdrawalCredential());
 
-    await this.oracle.updateQuorom(1);    
+    await this.oracle.updateValidatorQuorom(1);    
     await this.oracle
     .connect(oracle1)
     .activateValidator([
