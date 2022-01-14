@@ -8,7 +8,7 @@ import "./interfaces/IDepositContract.sol";
 import "./interfaces/IIssuer.sol";
 
 contract Issuer is CoreRef, IIssuer {
-    uint256 public constant VALIDATOR_DEPOSIT = 32 ether;
+    uint256 public constant VALIDATOR_DEPOSIT = 31 ether;
 
     IDepositContract public DEPOSIT_CONTRACT;
     uint256 public pendingValidators;
@@ -75,8 +75,8 @@ contract Issuer is CoreRef, IIssuer {
 
     function mintStkEthForEth(uint256 amount, address user) internal {
         uint256 stkEthToMint = (amount * 1e18) / stkEth().pricePerShare();
-        console.log("amount", amount);
-        console.log("stkEth().pricePerShare()", stkEth().pricePerShare());
+        //console.log("amount", amount);
+        //console.log("stkEth().pricePerShare()", stkEth().pricePerShare());
         stkEth().mint(user, stkEthToMint);
     }
 
@@ -93,9 +93,9 @@ contract Issuer is CoreRef, IIssuer {
             ((address(this).balance) / (VALIDATOR_DEPOSIT));
         uint256 _activatedValidators = oracle().activatedValidators();
         uint256 validatorIndex = _activatedValidators + _pendingValidators;
-        console.log("Pending val", _pendingValidators);
-        console.log("active val", _activatedValidators);
-        console.log("val index", validatorIndex);
+        //console.log("Pending val", _pendingValidators);
+        //console.log("active val", _activatedValidators);
+        //console.log("val index", validatorIndex);
 
         if (
             validatorIndex * 1e4 <=
@@ -103,10 +103,10 @@ contract Issuer is CoreRef, IIssuer {
         ) {
             // 10001
             mintStkEthForEth(msg.value, msg.sender);
-            console.log("STKETH SUPPLY", stkEth().totalSupply());
+            //console.log("STKETH SUPPLY", stkEth().totalSupply());
         } else {
             // lock deposit amount until validator activated
-            console.log("not minted", stkEth().totalSupply());
+            //console.log("not minted", stkEth().totalSupply());
             activations[msg.sender][validatorIndex] =
                 activations[msg.sender][validatorIndex] +
                 msg.value;
@@ -118,11 +118,11 @@ contract Issuer is CoreRef, IIssuer {
         whenNotPaused
     {
         uint256 activatedValidators = oracle().activatedValidators();
-        console.log("activatedValidators", activatedValidators);
+        //console.log("activatedValidators", activatedValidators);
 
         uint256 amount = activations[_account][_validatorIndex];
         require(amount > 0, "Issuer: invalid validator index");
-        console.log("amount", amount);
+        //console.log("amount", amount);
         require(
             _validatorIndex * 1e4 <=
                 activatedValidators * (pendingValidatorsLimit + 1e4),
