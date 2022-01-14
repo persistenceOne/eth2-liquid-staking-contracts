@@ -266,7 +266,7 @@ contract Oracle is IOracle, CoreRef {
             pricePerShare =
                 ((rewardBase - deltaEth) * 1e18) /
                 (activatedValidators * DEPOSIT_LIMIT);
-            console.log("Price per share is: ", pricePerShare);
+            //console.log("Price per share is: ", pricePerShare);
         }
     }
 
@@ -280,8 +280,8 @@ contract Oracle is IOracle, CoreRef {
 
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
-        console.log("valEthShare", valEthShare);
-        console.log("protocolEthShare", protocolEthShare);
+        //console.log("valEthShare", valEthShare);
+        //console.log("protocolEthShare", protocolEthShare);
 
         mintStkEthForEth(valEthShare, core().validatorPool(), price);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
@@ -337,8 +337,8 @@ contract Oracle is IOracle, CoreRef {
             "Number of Validators or Balance incorrect"
         );
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
-        console.log("currentFrameEpochId", currentFrameEpochId);
-        console.log("lastCompletedEpochId", lastCompletedEpochId);
+        //console.log("currentFrameEpochId", currentFrameEpochId);
+        //console.log("lastCompletedEpochId", lastCompletedEpochId);
 
         require(
             currentFrameEpochId > lastCompletedEpochId,
@@ -399,8 +399,8 @@ contract Oracle is IOracle, CoreRef {
                 );
             }
             activatedValidators = numberOfValidators;
-            console.log("rewardBase", rewardBase);
-            console.log("latestEthBalance", latestEthBalance);
+            //console.log("rewardBase", rewardBase);
+            //console.log("latestEthBalance", latestEthBalance);
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {
