@@ -9,6 +9,8 @@ import "./interfaces/IIssuer.sol";
 
 contract Issuer is CoreRef, IIssuer {
     uint256 public constant VALIDATOR_DEPOSIT = 31 ether;
+    uint256 public constant VERIFICATION_DEPOSIT = 1 ether;
+    
 
     IDepositContract public DEPOSIT_CONTRACT;
     uint256 public pendingValidators;
@@ -148,4 +150,31 @@ contract Issuer is CoreRef, IIssuer {
             validator.deposit_root
         );
     }
+
+
+    function validatordepositToEth2(bytes calldata publicKey) internal {
+        IKeysManager.Validator memory validator = IKeysManager(
+            core().keysManager()
+            ).validators(publicKey);
+
+        IKeysManager(core().keysManager()).depositValidator(publicKey);
+
+        //pendingValidators = pendingValidators + 1;
+        DEPOSIT_CONTRACT.deposit{value: VERIFICATION_DEPOSIT } (
+            publicKey, //
+            abi.encodePacked(core().withdrawalCredential()),
+            validator.signature,
+            validator.deposit_root
+        );
+    }
+
+
+
+
+
+
+
+
+
+
 }
