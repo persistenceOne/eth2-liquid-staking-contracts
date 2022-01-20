@@ -291,7 +291,7 @@ contract Oracle is IOracle, CoreRef {
     function activateValidator(bytes[] memory _publicKeys) external override {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
         require(
-            block.timestamp >= lastValidatorActivation + 1 hours,
+            block.timestamp >= lastValidatorActivation + 24 hours,
             "voted before an hour"
         );
         bytes32 candidateId = keccak256(abi.encode(_publicKeys));

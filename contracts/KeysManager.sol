@@ -14,11 +14,7 @@ contract KeysManager is IKeysManager, CoreRef {
     bytes32 depositRoot;
     bytes32 withdrawal_credentials;
 
-    event AddValidator(
-        bytes indexed publicKey,
-        bytes indexed signature,
-        address indexed nodeOperator
-    );
+    event AddValidator(bytes publicKey, bytes signature, address nodeOperator);
     event ActivateValidator(bytes[] publicKey);
     event DepositValidator(bytes publicKey);
 
@@ -63,6 +59,9 @@ contract KeysManager is IKeysManager, CoreRef {
         );
         for (uint256 i = 0; i < publicKeys.length; i++) {
             Validator storage validator = _validators[publicKeys[i]];
+            if (validator.state == State.ACTIVATED) {
+                revert("Validator already activated");
+            }
             require(validator.state == State.VALID, "KeysManager: Invalid Key");
             validator.state = State.ACTIVATED;
             emit ActivateValidator(publicKeys);
