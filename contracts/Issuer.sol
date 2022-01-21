@@ -136,12 +136,12 @@ contract Issuer is CoreRef, IIssuer {
     }
 
     function depositToEth2(bytes calldata publicKey) external {
-
-        
         
         IKeysManager.Validator memory validator = IKeysManager(
             core().keysManager()
         ).validators(publicKey);
+
+        withdrawalverificationDeposit(validator.nodeOperator);
 
         IKeysManager(core().keysManager()).depositValidator(publicKey);
 
@@ -154,10 +154,30 @@ contract Issuer is CoreRef, IIssuer {
         );
     }
 
-       function withdrawalverificationDeposit(address nodeOperator) external payable {
+       function withdrawalverificationDeposit(address nodeOperator) internal payable {
 
         (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
         require(sent, "Failed to send the withdrawal verification amount 1 Ether");
     }
 
+}
+
+
+
+interface IContractA {
+
+    struct User {
+        address addr;
+    }
+    function getUser(address addr) external view returns (User memory user);
+}
+
+contract contractB{
+
+    function getUserFromContractA(address addr) public view
+        returns (IContractA.User memory user)
+    {
+      ContractA = IContractA(addrContractA);
+      user = ContractA.getUser(addr);
+    }
 }
