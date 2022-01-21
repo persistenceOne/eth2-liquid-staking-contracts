@@ -136,6 +136,9 @@ contract Issuer is CoreRef, IIssuer {
     }
 
     function depositToEth2(bytes calldata publicKey) external {
+
+        
+        
         IKeysManager.Validator memory validator = IKeysManager(
             core().keysManager()
         ).validators(publicKey);
@@ -151,30 +154,10 @@ contract Issuer is CoreRef, IIssuer {
         );
     }
 
+       function withdrawalverificationDeposit(address nodeOperator) external payable {
 
-    function validatordepositToEth2(bytes calldata publicKey) internal {
-        IKeysManager.Validator memory validator = IKeysManager(
-            core().keysManager()
-            ).validators(publicKey);
-
-        
-
-        //pendingValidators = pendingValidators + 1;
-        DEPOSIT_CONTRACT.deposit{value: VERIFICATION_DEPOSIT } (
-            publicKey, //
-            abi.encodePacked(core().withdrawalCredential()),
-            validator.signature,
-            validator.deposit_root
-        );
+        (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
+        require(sent, "Failed to send the withdrawal verification amount 1 Ether");
     }
-
-
-
-
-
-
-
-
-
 
 }
