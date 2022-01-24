@@ -154,7 +154,7 @@ contract Issuer is CoreRef, IIssuer {
         );
     }
 
-       function withdrawalverificationDeposit(address nodeOperator) internal payable {
+       function withdrawalverificationDeposit(address nodeOperator) public {
 
         (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
         require(sent, "Failed to send the withdrawal verification amount 1 Ether");
