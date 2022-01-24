@@ -17,6 +17,8 @@ contract Issuer is CoreRef, IIssuer {
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
 
+    bool public locked;
+
     mapping(address => mapping(uint256 => uint256)) public activations;
 
     constructor(
@@ -154,11 +156,24 @@ contract Issuer is CoreRef, IIssuer {
         );
     }
 
-       function withdrawalverificationDeposit(address nodeOperator) public {
+       function withdrawalverificationDeposit(address nodeOperator) public noReentrancy  {
 
         (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
         require(sent, "Failed to send the withdrawal verification amount 1 Ether");
     }
+
+        modifier noReentrancy() {
+        require(!locked, "No reentrancy");
+
+        locked = true;
+        _;
+        locked = false;
+    }
+
+ 
+
+
+
 
 }
 
