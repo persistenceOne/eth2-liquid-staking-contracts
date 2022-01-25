@@ -17,6 +17,8 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
 
+    bool public locked;
+
     mapping(address => mapping(uint256 => uint256)) public activations;
 
     constructor(
