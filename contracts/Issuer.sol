@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
-import "hardhat/console.sol";
 import "./interfaces/IKeysManager.sol";
 import "./interfaces/IDepositContract.sol";
 import "./interfaces/IIssuer.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Issuer is CoreRef, IIssuer {
+contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     uint256 public constant VALIDATOR_DEPOSIT = 31 ether;
     uint256 public constant VERIFICATION_DEPOSIT = 1 ether;
     
@@ -137,6 +137,8 @@ contract Issuer is CoreRef, IIssuer {
 
     function depositToEth2(bytes calldata publicKey) external {
         
+        require(address(this).balance > 32e18, "Issuer: Not enough eth yet");
+
         IKeysManager.Validator memory validator = IKeysManager(
             core().keysManager()
         ).validators(publicKey);
@@ -154,10 +156,9 @@ contract Issuer is CoreRef, IIssuer {
         );
     }
 
-       function withdrawalverificationDeposit(address nodeOperator) internal payable {
-
-        (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
-        require(sent, "Failed to send the withdrawal verification amount 1 Ether");
+    function withdrawalverificationDeposit(address nodeOperator) internal nonReentrant {
+        (bool sent, ) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
+        require(sent, "Issuer: Node Operator transfer failed");
     }
 
 }

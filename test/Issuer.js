@@ -340,6 +340,7 @@ describe("Issuer", function () {
       parseInt(stkEthToMint)
     );
   });
+  
   describe("should active correctly", async function () {
     it("should not activate with invalid index", async function () {
       await this.issuer.connect(defaultSigner).setPendingValidatorsLimit(8000); //Validator Index should be within 50% of current validators
