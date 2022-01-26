@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
 import "./interfaces/IKeysManager.sol";
-import "hardhat/console.sol";
+import { IStakingPool } from "./interfaces/IStakingPool.sol";
 
 contract KeysManager is IKeysManager, CoreRef {
     mapping(bytes => Validator) public _validators;
@@ -17,6 +17,8 @@ contract KeysManager is IKeysManager, CoreRef {
     event AddValidator(bytes publicKey, bytes signature, address nodeOperator);
     event ActivateValidator(bytes[] publicKey);
     event DepositValidator(bytes publicKey);
+
+    mapping (address => uint256) public nodeOperatorValidatorCount;
 
     constructor(address _core) public CoreRef(_core) {}
 
@@ -73,12 +75,21 @@ contract KeysManager is IKeysManager, CoreRef {
             msg.sender == core().issuer(),
             "KeysManager: Only issuer can activate"
         );
+
         Validator storage validator = _validators[publicKey];
+        
+        require(
+            IStakingPool(core().validatorPool()).numOfValidatorAllowed(validator.nodeOperator) > 
+            nodeOperatorValidatorCount[validator.nodeOperator],
+            "KeysManager: validator deposit not added by node operator"
+        );
+        
         require(
             validator.state == State.ACTIVATED,
             "KeysManager: Key not activated"
         );
         validator.state = State.DEPOSITED;
+        nodeOperatorValidatorCount[validator.nodeOperator] += 1;
         emit DepositValidator(publicKey);
     }
 

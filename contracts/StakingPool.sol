@@ -22,6 +22,8 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
+    uint256 public MIN_DEPOSIT_VALIDATOR = 15e18;
+
     IStkEth public stkEth;
 
     ICore public core;
@@ -72,12 +74,28 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         if(amountsIn[0] > totalStake){
             pstake.approve(address(router), totalStake);
             router.swapExactTokensForTokens(totalStake, 0, path, address(this), block.timestamp + 100);
+            totalStake = 0;
         }else{
             pstake.approve(address(router), amountsIn[0]);
             router.swapTokensForExactTokens(amount, amountsIn[0], path, address(this), block.timestamp + 100);
+            totalStake = totalStake - amountsIn[0];
         }
 
         stkEth.burn(address(this), stkEth.balanceOf(address(this)));
+
+    }
+
+    function numOfValidatorAllowed(address usr) public view override returns (uint256) {
+
+        uint256 shares = userShare[usr];
+
+        if(totalStake == 0){
+            return 0;
+        }
+
+        uint256 stakedAmount = shares * totalStake/totalShares;
+
+        return stakedAmount/MIN_DEPOSIT_VALIDATOR;
 
     }
 

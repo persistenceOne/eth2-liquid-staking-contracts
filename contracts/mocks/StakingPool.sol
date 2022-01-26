@@ -9,4 +9,9 @@ contract DummyStakingPool is IStakingPool {
         // 
     }
 
+    function numOfValidatorAllowed(address usr) external override returns (uint256){
+
+        return 100;
+    }
+
 }

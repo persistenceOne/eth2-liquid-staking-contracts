@@ -7,4 +7,6 @@ interface IStakingPool {
     
     function slash(uint256 amount) external;
 
+    function numOfValidatorAllowed(address usr) external returns (uint256);
+
 }
