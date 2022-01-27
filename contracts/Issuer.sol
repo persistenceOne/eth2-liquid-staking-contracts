@@ -2,12 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
+import "hardhat/console.sol";
 import "./interfaces/IKeysManager.sol";
 import "./interfaces/IDepositContract.sol";
 import "./interfaces/IIssuer.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
-contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
+/// @author ...
+/// @title Issuer
+/// @notice contract for issuance of assets
+contract Issuer is CoreRef, IIssuer {
     uint256 public constant VALIDATOR_DEPOSIT = 31 ether;
     uint256 public constant VERIFICATION_DEPOSIT = 1 ether;
     
@@ -21,6 +23,12 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
 
     mapping(address => mapping(uint256 => uint256)) public activations;
 
+
+    /// @notice constructor for initializing core
+    /// @param core address of the core 
+    /// @param _minActivatingDeposit minimum amount of ether deposited to activate ...
+    /// @param _pendingValidatorsLimit ...
+    /// @param demoDeposit ...
     constructor(
         address core,
         uint256 _minActivatingDeposit,
@@ -34,6 +42,10 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         pendingValidatorsLimit = _pendingValidatorsLimit;
     }
 
+
+
+    /// @notice function returns minimum activating deposit.
+    /// @return minActivatingDeposit returns the value of minimum deposit required to activate validator.
     function activatingDeposit()
         public
         view
@@ -42,6 +54,9 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         return minActivatingDeposit;
     }
 
+
+    /// @notice function returns pending validator limit.
+    /// @return pendingValidatorsLimit number of pending validators.
     function pendingValidatorLimit()
         public
         view
@@ -57,6 +72,9 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         minActivatingDeposit = _minActivatingDeposit;
     }
 
+
+    /// @notice function for setting the count of pending validators limit.
+    /// @param _pendingValidatorsLimit integer limit for number of pending validators.
     function setPendingValidatorsLimit(uint256 _pendingValidatorsLimit)
         external
         onlyGovernor
@@ -65,6 +83,9 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         pendingValidatorsLimit = _pendingValidatorsLimit;
     }
 
+
+    /// @notice function for updating the count of pending validators with new activated validators.
+    /// @param newActiveValidators the number of new activated validators.
     function updatePendingValidator(uint256 newActiveValidators)
         external
         override
@@ -77,13 +98,19 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         pendingValidators = pendingValidators - newActiveValidators;
     }
 
+
+
+    /// @notice function to mint Stk Eth for Eth.
+    /// @param amount amount of ether.
+    /// @param user address of user.
     function mintStkEthForEth(uint256 amount, address user) internal {
         uint256 stkEthToMint = (amount * 1e18) / stkEth().pricePerShare();
-        //console.log("amount", amount);
-        //console.log("stkEth().pricePerShare()", stkEth().pricePerShare());
+
         stkEth().mint(user, stkEthToMint);
     }
 
+
+    /// @notice function for issuer to stake
     function stake() public payable whenNotPaused {
         require(msg.value > 0, "Issuer: can't stake zero");
 
@@ -92,14 +119,12 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
             return;
         }
 
-        // mint tokens if current pending validators limit is not exceed
+        // mint tokens if current pending validators limit is not exceeded
         uint256 _pendingValidators = pendingValidators +
             ((address(this).balance) / (VALIDATOR_DEPOSIT));
         uint256 _activatedValidators = oracle().activatedValidators();
         uint256 validatorIndex = _activatedValidators + _pendingValidators;
-        //console.log("Pending val", _pendingValidators);
-        //console.log("active val", _activatedValidators);
-        //console.log("val index", validatorIndex);
+
 
         if (
             validatorIndex * 1e4 <=
@@ -107,26 +132,30 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         ) {
             // 10001
             mintStkEthForEth(msg.value, msg.sender);
-            //console.log("STKETH SUPPLY", stkEth().totalSupply());
+  
         } else {
-            // lock deposit amount until validator activated
-            //console.log("not minted", stkEth().totalSupply());
+
             activations[msg.sender][validatorIndex] =
                 activations[msg.sender][validatorIndex] +
                 msg.value;
         }
     }
 
-    function activate(address _account, uint256 _validatorIndex)
+
+
+        /// @notice .......
+        /// @param _account .....
+        /// @param _validatorIndex ....
+        function activate(address _account, uint256 _validatorIndex)
         external
         whenNotPaused
     {
         uint256 activatedValidators = oracle().activatedValidators();
-        //console.log("activatedValidators", activatedValidators);
+       
 
         uint256 amount = activations[_account][_validatorIndex];
         require(amount > 0, "Issuer: invalid validator index");
-        //console.log("amount", amount);
+      
         require(
             _validatorIndex * 1e4 <=
                 activatedValidators * (pendingValidatorsLimit + 1e4),
@@ -137,10 +166,12 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         mintStkEthForEth(amount, _account);
     }
 
-    function depositToEth2(bytes calldata publicKey) external {
-        
-        require(address(this).balance > 32e18, "Issuer: Not enough eth yet");
 
+
+        /// @notice function for deposit of 32 Ether.
+        /// @param publicKey public key of the validator.
+        function depositToEth2(bytes calldata publicKey) external {
+        
         IKeysManager.Validator memory validator = IKeysManager(
             core().keysManager()
         ).validators(publicKey);
@@ -158,11 +189,28 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         );
     }
 
-    function withdrawalverificationDeposit(address nodeOperator) internal nonReentrant {
-        (bool sent, ) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
-        require(sent, "Issuer: Node Operator transfer failed");
+
+
+        /// @notice function for sending 1 Ether to a node operator address.
+        /// @param nodeOperator address of the node operator
+        function withdrawalverificationDeposit(address nodeOperator) public noReentrancy  {
+
+        (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
+        require(sent, "Failed to send the withdrawal verification amount 1 Ether");
     }
 
+        modifier noReentrancy() {
+        require(!locked, "No reentrancy");
+
+        locked = true;
+        _;
+        locked = false;
+    }
+
+ 
+
+
 }
+
 
 
