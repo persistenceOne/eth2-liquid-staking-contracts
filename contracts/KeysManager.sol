@@ -5,6 +5,9 @@ import "./CoreRef.sol";
 import "./interfaces/IKeysManager.sol";
 import { IStakingPool } from "./interfaces/IStakingPool.sol";
 
+/// @title Keys manager contract
+/// @author ...
+/// @notice Contract for on managing public keys, signatures
 contract KeysManager is IKeysManager, CoreRef {
     mapping(bytes => Validator) public _validators;
 
@@ -20,8 +23,16 @@ contract KeysManager is IKeysManager, CoreRef {
 
     mapping (address => uint256) public nodeOperatorValidatorCount;
 
+
+
+    /// @notice constructor to initialize Core
+    /// @param _core address of the core
     constructor(address _core) public CoreRef(_core) {}
 
+
+
+    /// @notice function that returns public key of a particular validator.
+    /// @param publicKey public key of the validator.
     function validators(bytes calldata publicKey)
         external
         view
@@ -31,6 +42,11 @@ contract KeysManager is IKeysManager, CoreRef {
         return _validators[publicKey];
     }
 
+
+    /// @notice function to add a new validator
+    /// @param publicKey public key of the validator
+    /// @param signature ...
+    /// @param nodeOperator address of the node operator
     function addValidator(
         bytes calldata publicKey,
         bytes calldata signature,
@@ -54,6 +70,12 @@ contract KeysManager is IKeysManager, CoreRef {
         emit AddValidator(publicKey, signature, nodeOperator);
     }
 
+
+
+
+    /// @notice function for activating the status of an array of validator public keys
+    /// @param publicKeys public keys array of validators.
+
     function activateValidator(bytes[] memory publicKeys) external override {
         require(
             msg.sender == core().oracle(),
@@ -70,6 +92,10 @@ contract KeysManager is IKeysManager, CoreRef {
         }
     }
 
+
+
+    /// @notice set status of validator to deposited
+    /// @param publicKey public key of the validator.
     function depositValidator(bytes memory publicKey) external override {
         require(
             msg.sender == core().issuer(),
@@ -93,6 +119,9 @@ contract KeysManager is IKeysManager, CoreRef {
         emit DepositValidator(publicKey);
     }
 
+
+    /// @notice function to return the deposit data root node
+    /// @return node is deposit root node 
     function verifyDepositDataRoot(
         bytes calldata pubKey,
         bytes calldata signature
@@ -132,10 +161,17 @@ contract KeysManager is IKeysManager, CoreRef {
         return node;
     }
 
+
+    /// @notice function for viewing deposit root node
+    /// @return depositRoot is the root node of deposit data.
     function depositRootView() external view returns (bytes32) {
         return depositRoot;
     }
 
+
+
+    /// @notice function to convert address to Bytes
+    /// @param a address to be converted to bytes.
     function toBytes(address a) public pure returns (bytes memory b) {
         assembly {
             let m := mload(0x40)
@@ -149,6 +185,10 @@ contract KeysManager is IKeysManager, CoreRef {
         }
     }
 
+
+    /// @notice function to convert to integer to little endian 64 bytes format.
+    /// @param value is the integer number.
+    /// @return ret is 8 byte array.
     function to_little_endian_64(uint64 value)
         internal
         pure
@@ -166,7 +206,11 @@ contract KeysManager is IKeysManager, CoreRef {
         ret[6] = bytesValue[1];
         ret[7] = bytesValue[0];
     }
+    
 
+
+    /// @notice function for checking if signing key ...
+    /// @param _key ...
     function _isEmptySigningKey(bytes memory _key)
         internal
         pure
