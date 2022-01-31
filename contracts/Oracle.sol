@@ -70,6 +70,15 @@ contract Oracle is IOracle, CoreRef {
     event validatorActivated(bytes[] _publicKey);
     event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
 
+
+    /// @notice constructor to initialize core
+    /// @param _epochsPerTimePeriod epochs per time period
+    /// @param _slotsPerEpoch slots per Epoch
+    /// @param _genesisTime time of genesis
+    /// @param _core core reference
+    /// @param _keysManager keysmanager reference
+    /// @param _pStakeCommission protocol commission
+    /// @param _valCommission validator commissiom
     constructor(
         uint64 _epochsPerTimePeriod,
         uint64 _slotsPerEpoch,
@@ -124,22 +133,39 @@ contract Oracle is IOracle, CoreRef {
             1;
     }
 
+    /// @notice function to return the current nonce
+    /// @return current nonce
     function currentNonce() external view returns (uint256) {
         return nonce.current();
     }
 
+
+    /// @notice function to return oracle member length
+    /// @return number of oracle members
     function oracleMemberLength() public view returns (uint256) {
         return EnumerableSet.length(oracleMember);
     }
 
+
+    /// @notice ...
+    /// @return ...
     function Quorom() external view returns (uint32) {
         return quorom;
     }
 
+
+    /// @notice function to return the current nonce
+    /// @return current nonce
     function ValidatorQuorom() external view returns (uint32) {
         return validatorQuorom;
     }
 
+
+    /// @notice function to return the current nonce
+    /// @return epochsPerTimePeriod
+    /// @return slotsPerEpoch
+    /// @return secondsPerSlot
+    /// @return genesisTime
     function getBeaconData()
         external
         view
@@ -158,6 +184,9 @@ contract Oracle is IOracle, CoreRef {
         );
     }
 
+
+    /// @notice function to return the frame id of first epoch
+    /// @return ...
     function _getFrameFirstEpochId(
         uint256 _epochId,
         BeaconData memory _beaconSpec
@@ -167,6 +196,8 @@ contract Oracle is IOracle, CoreRef {
             _beaconSpec.epochsPerTimePeriod;
     }
 
+    /// @notice function to return the current epoch id
+    /// @return ...
     function _getCurrentEpochId(BeaconData memory _beaconSpec)
         internal
         view
@@ -177,6 +208,9 @@ contract Oracle is IOracle, CoreRef {
             (beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
     }
 
+
+    /// @notice ...
+    /// @return ...
     function _getCurrentEpochIdExt(BeaconData memory _beaconSpec)
         external
         view
@@ -187,14 +221,24 @@ contract Oracle is IOracle, CoreRef {
             (beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
     }
 
+
+    /// @notice function to return the last completed epoch id
+    /// @return lastCompletedEpochId
     function getLastCompletedEpochId() external view returns (uint256) {
         return lastCompletedEpochId;
     }
 
+
+    /// @notice function to return the total ether balance
+    /// @return beaconEthBalance 
     function getTotalEther() external view returns (uint256) {
         return beaconEthBalance;
     }
 
+
+    /// @notice function to update latestQuorom
+    /// @param latestQuorom ...
+    
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
@@ -242,6 +286,9 @@ contract Oracle is IOracle, CoreRef {
         emit oracleMemberRemoved(oracleMeberToDelete, oracleMemberLength());
     }
 
+
+    /// @notice function to check if adress is oracle member
+    /// @return oracleMember  
     function isOralce(address member) public view returns (bool) {
         return (EnumerableSet.contains(oracleMember, member));
     }
