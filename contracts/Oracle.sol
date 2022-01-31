@@ -95,6 +95,10 @@ contract Oracle is IOracle, CoreRef {
         valCommission = _valCommission;
     }
 
+    /// @notice fucntion that returns the 
+    /// @return frameEpochId epoch id of the frame
+    /// @return frameStartTime timestamp of start of time frame
+    /// @return frameEndTime
     function getCurrentTimePeriod()
         external
         view
@@ -242,6 +246,11 @@ contract Oracle is IOracle, CoreRef {
         return (EnumerableSet.contains(oracleMember, member));
     }
 
+
+    /// @notice function for minting of StkEth for Eth
+    /// @param amount ...
+    /// @param user ...
+    /// @param newPricePerShare new price per share
     function mintStkEthForEth(
         uint256 amount,
         address user,
@@ -250,6 +259,11 @@ contract Oracle is IOracle, CoreRef {
         uint256 stkEthToMint = (amount * 1e18) / newPricePerShare;
         stkEth().mint(user, stkEthToMint);
     }
+
+
+    /// @notice function for slashing balance of a pool 
+    /// @param deltaEth difference in eth balance since last distribution
+    /// @param rewardBase ...
 
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
         //
@@ -270,6 +284,9 @@ contract Oracle is IOracle, CoreRef {
         }
     }
 
+    /// @notice function to distribute rewards by setting price per share
+    /// @param deltaEth difference in eth balance since last distribution
+    /// @param rewardBase ...
     function distributeRewards(uint256 deltaEth, uint256 rewardBase) internal {
         // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
         // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
@@ -288,6 +305,9 @@ contract Oracle is IOracle, CoreRef {
         pricePerShare = price;
     }
 
+
+    /// @notice function to activate an array of validators
+    /// @param _publicKeys public key array of validators
     function activateValidator(bytes[] memory _publicKeys) external override {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
         require(
@@ -326,6 +346,11 @@ contract Oracle is IOracle, CoreRef {
         }
     }
 
+
+    /// @notice function to push data to oracle
+    /// @param latestEthBalance latest balance of eth 
+    /// @param latestNonce latest nonce number
+    /// @param numberOfValidators count of validators
     function pushData(
         uint256 latestEthBalance,
         uint256 latestNonce,
@@ -416,6 +441,12 @@ contract Oracle is IOracle, CoreRef {
         emit dataPushed(latestEthBalance, latestNonce, numberOfValidators);
     }
 
+
+    /// @notice update the specification parameters for beacon chain data
+    /// @param epochsPerTimePeriod ...
+    /// @param slotsPerEpoch ...
+    /// @param secondsPerSlot ...
+    /// @param genesisTime ...
     //DAO
     function updateBeaconChainData(
         uint64 epochsPerTimePeriod,
@@ -430,6 +461,14 @@ contract Oracle is IOracle, CoreRef {
             genesisTime
         );
     }
+
+
+
+    /// @notice sets the specification parameters for beacon chain data
+    /// @param _epochsPerTimePeriod ...
+    /// @param _slotsPerEpoch ...
+    /// @param _secondsPerSlot ...
+    /// @param _genesisTime ...
 
     function _setBeaconSpec(
         uint64 _epochsPerTimePeriod,
