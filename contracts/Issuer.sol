@@ -21,7 +21,7 @@ contract Issuer is CoreRef, IIssuer {
 
     bool public locked;
 
-    event MintStkEthForEth (uint256 amount, address user, uint256 stkEthToMint);
+    /// event MintStkEthForEth (uint256 amount, address user, uint256 stkEthToMint);
 
     mapping(address => mapping(uint256 => uint256)) public activations;
 
@@ -109,7 +109,7 @@ contract Issuer is CoreRef, IIssuer {
         uint256 stkEthToMint = (amount * 1e18) / stkEth().pricePerShare();
 
         stkEth().mint(user, stkEthToMint);
-        emit MintStkEthForEth (amount, user,stkEthToMint);
+        /// emit MintStkEthForEth (amount, user,stkEthToMint);
     }
 
 
