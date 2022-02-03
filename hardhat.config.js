@@ -3,6 +3,8 @@ require("dotenv").config();
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-ethers");
+require("@openzeppelin/hardhat-upgrades");
+
 require("solidity-coverage");
 
 // https://eth-mainnet.alchemyapi.io/v2/NGeHrpvz4BP0WZGaiaaBInJA-yKjMKf9
@@ -34,13 +36,17 @@ module.exports = {
     //   // }
     //   allowUnlimitedContractSize: true,
     // },
-    // local: {
-    //   url: "http://localhost:8545",
-    // },
+    local: {
+      url: "http://localhost:8545",
+    },
     rinkeby: {
       url: "https://eth-rinkeby.alchemyapi.io/v2/RYejb4WXXjHmxxscJB4qNpIZkXMOXskn",
       accounts: ["0a0ddf30ecb569d0133c6108d6223a8d793a57e954443864ea8cce6ac25af30a"],
     },
+    goerli: {
+      url: process.env.RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
+    }
   },
   // gasReporter: {
   //   enabled: process.env.REPORT_GAS !== undefined,

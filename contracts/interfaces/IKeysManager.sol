@@ -21,4 +21,6 @@ interface IKeysManager {
     function activateValidator(bytes[] memory publicKey) external;
 
     function depositValidator(bytes memory publicKey) external;
+
+    function nodeOperatorValidatorCount(address usr) external returns (uint256);
 }

@@ -21,7 +21,7 @@ contract KeysManager is IKeysManager, CoreRef {
     event ActivateValidator(bytes[] publicKey);
     event DepositValidator(bytes publicKey);
 
-    mapping (address => uint256) public nodeOperatorValidatorCount;
+    mapping (address => uint256) public override nodeOperatorValidatorCount;
 
 
 
@@ -116,6 +116,9 @@ contract KeysManager is IKeysManager, CoreRef {
         );
         validator.state = State.DEPOSITED;
         nodeOperatorValidatorCount[validator.nodeOperator] += 1;
+
+        IStakingPool(core().validatorPool()).claimAndUpdateRewardDebt(validator.nodeOperator);
+
         emit DepositValidator(publicKey);
     }
 

@@ -6,6 +6,8 @@ import "hardhat/console.sol";
 import "./interfaces/IKeysManager.sol";
 import "./interfaces/IDepositContract.sol";
 import "./interfaces/IIssuer.sol";
+
+
 /// @author ...
 /// @title Issuer
 /// @notice contract for issuance of assets
@@ -15,9 +17,11 @@ contract Issuer is CoreRef, IIssuer {
     
 
     IDepositContract public DEPOSIT_CONTRACT;
-    uint256 public pendingValidators;
+    uint256 public override pendingValidators;
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
+
+
 
     bool public locked;
 

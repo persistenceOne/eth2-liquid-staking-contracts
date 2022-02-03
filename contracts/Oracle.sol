@@ -9,7 +9,7 @@ import "./interfaces/IStakingPool.sol";
 import "./CoreRef.sol";
 import "./interfaces/IIssuer.sol";
 import "./KeysManager.sol";
-import "hardhat/console.sol";
+import "./interfaces/IStakingPool.sol";
 
 contract Oracle is IOracle, CoreRef {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -93,6 +93,7 @@ contract Oracle is IOracle, CoreRef {
         );
         pStakeCommission = _pStakeCommission;
         valCommission = _valCommission;
+        stkEth().approve(core().validatorPool(), type(uint256).max);
     }
 
     function getCurrentTimePeriod()
@@ -246,8 +247,8 @@ contract Oracle is IOracle, CoreRef {
         uint256 amount,
         address user,
         uint256 newPricePerShare
-    ) internal {
-        uint256 stkEthToMint = (amount * 1e18) / newPricePerShare;
+    ) internal returns (uint256 stkEthToMint){
+        stkEthToMint = (amount * 1e18) / newPricePerShare;
         stkEth().mint(user, stkEthToMint);
     }
 
@@ -283,7 +284,8 @@ contract Oracle is IOracle, CoreRef {
         //console.log("valEthShare", valEthShare);
         //console.log("protocolEthShare", protocolEthShare);
 
-        mintStkEthForEth(valEthShare, core().validatorPool(), price);
+        uint256 stkEthMinted = mintStkEthForEth(valEthShare, address(this), price);
+        IStakingPool(core().validatorPool()).updateRewardPerValidator(stkEthMinted);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = price;
     }
