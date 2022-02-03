@@ -2,16 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "./CoreRef.sol";
-import "hardhat/console.sol";
 import "./interfaces/IKeysManager.sol";
 import "./interfaces/IDepositContract.sol";
 import "./interfaces/IIssuer.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
-/// @author ...
+/// @author PStake
 /// @title Issuer
-/// @notice contract for issuance of assets
-contract Issuer is CoreRef, IIssuer {
+/// @notice contract for issuance of StkEth
+contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     uint256 public constant VALIDATOR_DEPOSIT = 31 ether;
     uint256 public constant VERIFICATION_DEPOSIT = 1 ether;
     
@@ -21,9 +20,6 @@ contract Issuer is CoreRef, IIssuer {
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
 
-
-
-    bool public locked;
 
     /// event MintStkEthForEth (uint256 amount, address user, uint256 stkEthToMint);
 
@@ -150,12 +146,12 @@ contract Issuer is CoreRef, IIssuer {
 
 
 
-        /// @notice .......
-        /// @param _account .....
-        /// @param _validatorIndex ....
-        function activate(address _account, uint256 _validatorIndex)
-        external
-        whenNotPaused
+    /// @notice Mint stkEth after waiting for validator to get active
+    /// @param _account account of users whose stkEth need to be minted
+    /// @param _validatorIndex index of validator which got activated
+    function activate(address _account, uint256 _validatorIndex)
+       external
+       whenNotPaused
     {
         uint256 activatedValidators = oracle().activatedValidators();
        
@@ -175,10 +171,10 @@ contract Issuer is CoreRef, IIssuer {
 
 
 
-        /// @notice function for deposit of 32 Ether.
-        /// @param publicKey public key of the validator.
-        function depositToEth2(bytes calldata publicKey) external {
-        
+    /// @notice function for deposit of 32 Ether.
+    /// @param publicKey public key of the validator.
+    function depositToEth2(bytes calldata publicKey) external {
+        require(address(this).balance >= VALIDATOR_DEPOSIT + VERIFICATION_DEPOSIT, "Issuer: Not enough ether deposited");
         IKeysManager.Validator memory validator = IKeysManager(
             core().keysManager()
         ).validators(publicKey);
@@ -198,24 +194,13 @@ contract Issuer is CoreRef, IIssuer {
 
 
 
-        /// @notice function for sending 1 Ether to a node operator address.
-        /// @param nodeOperator address of the node operator
-        function withdrawalverificationDeposit(address nodeOperator) public noReentrancy  {
+    /// @notice function for sending 1 Ether to a node operator address.
+    /// @param nodeOperator address of the node operator
+    function withdrawalverificationDeposit(address nodeOperator) public nonReentrant  {
 
         (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
-        require(sent, "Failed to send the withdrawal verification amount 1 Ether");
+        require(sent, "Issuer: Failed to send to Node Operator");
     }
-
-        modifier noReentrancy() {
-        require(!locked, "No reentrancy");
-
-        locked = true;
-        _;
-        locked = false;
-    }
-
- 
-
 
 }
 
