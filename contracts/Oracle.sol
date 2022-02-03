@@ -312,7 +312,6 @@ contract Oracle is IOracle, CoreRef {
     /// @notice function for slashing balance of a pool 
     /// @param deltaEth difference in eth balance since last distribution
     /// @param rewardBase ...
-
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
         //
         uint256 stkEthToSlash = (deltaEth * 1e18) / pricePerShare;
@@ -411,8 +410,6 @@ contract Oracle is IOracle, CoreRef {
             "Number of Validators or Balance incorrect"
         );
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
-        //console.log("currentFrameEpochId", currentFrameEpochId);
-        //console.log("lastCompletedEpochId", lastCompletedEpochId);
 
         require(
             currentFrameEpochId > lastCompletedEpochId,
@@ -496,7 +493,6 @@ contract Oracle is IOracle, CoreRef {
     /// @param slotsPerEpoch ...
     /// @param secondsPerSlot ...
     /// @param genesisTime ...
-    //DAO
     function updateBeaconChainData(
         uint64 epochsPerTimePeriod,
         uint64 slotsPerEpoch,
@@ -518,7 +514,6 @@ contract Oracle is IOracle, CoreRef {
     /// @param _slotsPerEpoch ...
     /// @param _secondsPerSlot ...
     /// @param _genesisTime ...
-
     function _setBeaconSpec(
         uint64 _epochsPerTimePeriod,
         uint64 _slotsPerEpoch,
