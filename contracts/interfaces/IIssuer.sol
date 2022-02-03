@@ -7,4 +7,6 @@ interface IIssuer {
 
     function updatePendingValidator(uint256 newActiveValidators) external;
 
+    function pendingValidators() external view returns (uint256);
+
 }

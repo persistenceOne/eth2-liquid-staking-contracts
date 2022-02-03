@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 /// @author Ankit Parashar
 interface IKeysManager {
 
-    enum State { INVALID, VALID, ACTIVATED }
+    enum State { INVALID, VALID, ACTIVATED, DEPOSITED }
 
     struct Validator {
         State state;
@@ -18,5 +18,9 @@ interface IKeysManager {
 
     function addValidator(bytes calldata publicKey, bytes calldata signature,  address nodeOperator) external;
 
-    function activateValidator(bytes calldata publicKey) external;
+    function activateValidator(bytes[] memory publicKey) external;
+
+    function depositValidator(bytes memory publicKey) external;
+
+    function nodeOperatorValidatorCount(address usr) external returns (uint256);
 }

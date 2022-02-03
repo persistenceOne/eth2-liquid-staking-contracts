@@ -15,11 +15,10 @@ const balanceOf = async (erc20, userAddress) => {
   return await erc20.balanceOf(userAddress);
 };
 
-
 const rpcCall = async (callType, params) => {
   return await network.provider.request({
-      method: callType,
-      params: params
+    method: callType,
+    params: params,
   });
 };
 
@@ -32,9 +31,9 @@ const revertToSnapshot = async (snapId) => {
 };
 
 const increaseTime = async (seconds) => {
-  await network.provider.send("evm_increaseTime", [seconds])
-  await network.provider.send("evm_mine")
-}
+  await network.provider.send("evm_increaseTime", [seconds]);
+  await network.provider.send("evm_mine");
+};
 
 describe("Oracle", function () {
   let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, oracle5;
@@ -99,6 +98,7 @@ describe("Oracle", function () {
       secondsPerSlot,
       genesisTime,
       this.core.address,
+      this.keysManager.address,
       pStakeCommisisons,
       valCommissions
     );
@@ -148,12 +148,13 @@ describe("Oracle", function () {
         "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
       );
 
-      await this.oracle.addOracleMember(oracle1.address);
-      await this.oracle.addOracleMember(oracle2.address);
-      await this.oracle.addOracleMember(oracle3.address);
+    await this.oracle.addOracleMember(oracle1.address);
+    await this.oracle.addOracleMember(oracle2.address);
+    await this.oracle.addOracleMember(oracle3.address);
 
-      this.oracle.updateQuorom(3);
-      await this.oracle.updateCommissions(500, 500);
+    this.oracle.updateQuorom(3);
+    await this.oracle.updateCommissions(500, 500);
+    this.oracle.updateValidatorQuorom(1);
   });
 
   beforeEach(async function () {
@@ -161,7 +162,7 @@ describe("Oracle", function () {
   });
 
   afterEach(async function () {
-      await revertToSnapshot(snapshotId);
+    await revertToSnapshot(snapshotId);
   });
 
   it("deploys successfully", async function () {
@@ -177,11 +178,21 @@ describe("Oracle", function () {
     await expect(this.oracle.connect(user1).updateQuorom(3)).to.be.revertedWith(
       "CoreRef: Caller is not a governor"
     );
+    await expect(this.oracle.connect(user1).updateValidatorQuorom(3)).to.be.revertedWith(
+      "CoreRef: Caller is not a governor"
+    );
   });
 
   it("shouldn't set negavtive quorom", async function () {
     try {
       await this.oracle.updateQuorom(-1);
+    } catch (error) {
+      err = error;
+    }
+    // Assert
+    expect(err).to.not.equal(null);
+    try {
+      await this.oracle.updateValidatorQuorom(-1);
     } catch (error) {
       err = error;
     }
@@ -203,7 +214,7 @@ describe("Oracle", function () {
   });
 
   it("should remove oracle member correctly", async function () {
-      await this.oracle.removeOracleMember(oracle2.address);
+    await this.oracle.removeOracleMember(oracle2.address);
     expect(await this.oracle.isOralce(oracle2.address)).to.equal(false);
   });
 
@@ -221,9 +232,119 @@ describe("Oracle", function () {
     expect(beaconData.genesisTime.toString()).to.equal("1616508000");
   });
 
-  it("Should reach Quorom", async function () {
-    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+  it("Should reach Quorom to activate validator", async function () {
+    await this.oracle.updateValidatorQuorom(3);
+    await expect(
+      this.oracle
+        .connect(user1)
+        .activateValidator([
+          "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        ])
+    ).to.be.revertedWith("Not oracle Member");
 
+    await this.oracle
+      .connect(oracle1)
+      .activateValidator([
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+      ]);
+
+    await expect(
+      this.oracle
+        .connect(oracle1)
+        .activateValidator([
+          "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        ])
+    ).to.be.revertedWith("Oracles: already voted");
+
+    await this.oracle
+      .connect(oracle2)
+      .activateValidator([
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+      ]);
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+    expect(val.state.toString()).to.equal("1");
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
+      );
+    expect(val.state.toString()).to.equal("1");
+    await this.oracle
+      .connect(oracle3)
+      .activateValidator([
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+      ]);
+
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7"
+      );
+    expect(val.state.toString()).to.equal("2");
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
+      );
+    expect(val.state.toString()).to.equal("2");
+
+    await expect(
+      this.oracle
+        .connect(oracle1)
+        .activateValidator([
+          "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+          "0xb5832ad35f7713558987ce0317a480d1db394efd2b2c4a811db7bce7158bc53c8aec1ca17ea9753a2468bc9850a88ee7",
+        ])
+    ).to.be.revertedWith("voted before an hour");
+
+    await increaseTime(3601);
+
+    await this.oracle
+      .connect(oracle1)
+      .activateValidator([
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+      ]);
+    await this.oracle
+      .connect(oracle2)
+      .activateValidator([
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+      ]);
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
+      );
+    expect(val.state.toString()).to.equal("1");
+
+    await this.oracle
+      .connect(oracle3)
+      .activateValidator([
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+      ]);
+    val = await this.keysManager
+      .connect(user1)
+      .validators(
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
+      );
+    expect(val.state.toString()).to.equal("2");
+  });
+
+  it("Should reach Quorom to push data", async function () {
+    await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+    await this.oracle
+    .connect(oracle2)
+    .activateValidator([
+      "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
+    ]);
     await this.issuer.depositToEth2(
       "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
     );
@@ -278,6 +399,12 @@ describe("Oracle", function () {
   describe("Should implement distributeRewards", function () {
     it("Should update Price Per Share", async function () {
       await this.issuer.connect(user1).stake({ value: BigInt(64e18) });
+      await this.oracle
+      .connect(oracle2)
+      .activateValidator([
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+      ]);
       await this.issuer.depositToEth2(
         "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
       );
@@ -295,25 +422,34 @@ describe("Oracle", function () {
         pricePerShare = await this.oracle.pricePerShare();
         let pstakeEth = utils.parseEther((500 / 10000).toString());
         pstakeEth = pstakeEth.mul(utils.parseEther("1")).div(pricePerShare);
-        expect(await this.stkEth.balanceOf(treasury.address)).to.equal(pstakeEth);
+        expect(await this.stkEth.balanceOf(treasury.address)).to.equal(
+          pstakeEth
+        );
       });
-  
+
       it("Should update stakingPool Balance", async function () {
         pricePerShare = await this.oracle.pricePerShare();
         let valEth = utils.parseEther((500 / 10000).toString());
         valEth = valEth.mul(utils.parseEther("1")).div(pricePerShare);
-        expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(valEth);
+        expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(
+          valEth
+        );
       });
     });
-
   });
 
   describe("Should implement slashing", function () {
     it("Should slashing work", async function () {
-
       let nonce = parseInt(await this.oracle.currentNonce());
 
       await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
+     
+      await this.oracle
+      .connect(oracle2)
+      .activateValidator([
+        "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+        "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+      ]);
 
       await this.issuer.depositToEth2(
         "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
@@ -336,14 +472,13 @@ describe("Oracle", function () {
       await this.oracle.connect(oracle3).pushData(BigInt(66e9), nonce, 2);
 
       let pricePerShare = await this.oracle.pricePerShare();
-      console.log("pricePerShare",pricePerShare);
+      console.log("pricePerShare", pricePerShare);
 
       nonce = parseInt(await this.oracle.currentNonce());
       await increaseTime(420);
       await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
       await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
       await this.oracle.connect(oracle3).pushData(BigInt(65e9), nonce, 2);
-
 
       let newPricePerShare = await this.oracle.pricePerShare();
       expect(pricePerShare).to.be.above(newPricePerShare);
