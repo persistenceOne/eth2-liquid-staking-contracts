@@ -70,6 +70,15 @@ contract Oracle is IOracle, CoreRef {
     event validatorActivated(bytes[] _publicKey);
     event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
 
+
+    /// @notice constructor to initialize core
+    /// @param _epochsPerTimePeriod epochs per time period
+    /// @param _slotsPerEpoch slots per Epoch
+    /// @param _genesisTime time of genesis
+    /// @param _core core reference
+    /// @param _keysManager keysmanager reference
+    /// @param _pStakeCommission protocol commission
+    /// @param _valCommission validator commissiom
     constructor(
         uint64 _epochsPerTimePeriod,
         uint64 _slotsPerEpoch,
@@ -96,6 +105,10 @@ contract Oracle is IOracle, CoreRef {
         stkEth().approve(core().validatorPool(), type(uint256).max);
     }
 
+    /// @notice fucntion that returns the 
+    /// @return frameEpochId epoch id of the frame
+    /// @return frameStartTime timestamp of start of time frame
+    /// @return frameEndTime
     function getCurrentTimePeriod()
         external
         view
@@ -121,22 +134,39 @@ contract Oracle is IOracle, CoreRef {
             1;
     }
 
+    /// @notice function to return the current nonce
+    /// @return current nonce
     function currentNonce() external view returns (uint256) {
         return nonce.current();
     }
 
+
+    /// @notice function to return oracle member length
+    /// @return number of oracle members
     function oracleMemberLength() public view returns (uint256) {
         return EnumerableSet.length(oracleMember);
     }
 
+
+    /// @notice ...
+    /// @return ...
     function Quorom() external view returns (uint32) {
         return quorom;
     }
 
+
+    /// @notice function to return the current nonce
+    /// @return current nonce
     function ValidatorQuorom() external view returns (uint32) {
         return validatorQuorom;
     }
 
+
+    /// @notice function to return the current nonce
+    /// @return epochsPerTimePeriod
+    /// @return slotsPerEpoch
+    /// @return secondsPerSlot
+    /// @return genesisTime
     function getBeaconData()
         external
         view
@@ -155,6 +185,9 @@ contract Oracle is IOracle, CoreRef {
         );
     }
 
+
+    /// @notice function to return the frame id of first epoch
+    /// @return ...
     function _getFrameFirstEpochId(
         uint256 _epochId,
         BeaconData memory _beaconSpec
@@ -164,6 +197,8 @@ contract Oracle is IOracle, CoreRef {
             _beaconSpec.epochsPerTimePeriod;
     }
 
+    /// @notice function to return the current epoch id
+    /// @return ...
     function _getCurrentEpochId(BeaconData memory _beaconSpec)
         internal
         view
@@ -174,6 +209,9 @@ contract Oracle is IOracle, CoreRef {
             (beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
     }
 
+
+    /// @notice ...
+    /// @return ...
     function _getCurrentEpochIdExt(BeaconData memory _beaconSpec)
         external
         view
@@ -184,14 +222,24 @@ contract Oracle is IOracle, CoreRef {
             (beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
     }
 
+
+    /// @notice function to return the last completed epoch id
+    /// @return lastCompletedEpochId
     function getLastCompletedEpochId() external view returns (uint256) {
         return lastCompletedEpochId;
     }
 
+
+    /// @notice function to return the total ether balance
+    /// @return beaconEthBalance 
     function getTotalEther() external view returns (uint256) {
         return beaconEthBalance;
     }
 
+
+    /// @notice function to update latestQuorom
+    /// @param latestQuorom ...
+    
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
@@ -239,10 +287,18 @@ contract Oracle is IOracle, CoreRef {
         emit oracleMemberRemoved(oracleMeberToDelete, oracleMemberLength());
     }
 
+
+    /// @notice function to check if adress is oracle member
+    /// @return oracleMember  
     function isOralce(address member) public view returns (bool) {
         return (EnumerableSet.contains(oracleMember, member));
     }
 
+
+    /// @notice function for minting of StkEth for Eth
+    /// @param amount ...
+    /// @param user ...
+    /// @param newPricePerShare new price per share
     function mintStkEthForEth(
         uint256 amount,
         address user,
@@ -251,6 +307,11 @@ contract Oracle is IOracle, CoreRef {
         stkEthToMint = (amount * 1e18) / newPricePerShare;
         stkEth().mint(user, stkEthToMint);
     }
+
+
+    /// @notice function for slashing balance of a pool 
+    /// @param deltaEth difference in eth balance since last distribution
+    /// @param rewardBase ...
 
     function slash(uint256 deltaEth, uint256 rewardBase) internal {
         //
@@ -271,6 +332,9 @@ contract Oracle is IOracle, CoreRef {
         }
     }
 
+    /// @notice function to distribute rewards by setting price per share
+    /// @param deltaEth difference in eth balance since last distribution
+    /// @param rewardBase ...
     function distributeRewards(uint256 deltaEth, uint256 rewardBase) internal {
         // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
         // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
@@ -290,6 +354,9 @@ contract Oracle is IOracle, CoreRef {
         pricePerShare = price;
     }
 
+
+    /// @notice function to activate an array of validators
+    /// @param _publicKeys public key array of validators
     function activateValidator(bytes[] memory _publicKeys) external override {
         if (isOralce(msg.sender) == false) revert("Not oracle Member");
         require(
@@ -328,6 +395,11 @@ contract Oracle is IOracle, CoreRef {
         }
     }
 
+
+    /// @notice function to push data to oracle
+    /// @param latestEthBalance latest balance of eth 
+    /// @param latestNonce latest nonce number
+    /// @param numberOfValidators count of validators
     function pushData(
         uint256 latestEthBalance,
         uint256 latestNonce,
@@ -418,6 +490,12 @@ contract Oracle is IOracle, CoreRef {
         emit dataPushed(latestEthBalance, latestNonce, numberOfValidators);
     }
 
+
+    /// @notice update the specification parameters for beacon chain data
+    /// @param epochsPerTimePeriod ...
+    /// @param slotsPerEpoch ...
+    /// @param secondsPerSlot ...
+    /// @param genesisTime ...
     //DAO
     function updateBeaconChainData(
         uint64 epochsPerTimePeriod,
@@ -432,6 +510,14 @@ contract Oracle is IOracle, CoreRef {
             genesisTime
         );
     }
+
+
+
+    /// @notice sets the specification parameters for beacon chain data
+    /// @param _epochsPerTimePeriod ...
+    /// @param _slotsPerEpoch ...
+    /// @param _secondsPerSlot ...
+    /// @param _genesisTime ...
 
     function _setBeaconSpec(
         uint64 _epochsPerTimePeriod,
