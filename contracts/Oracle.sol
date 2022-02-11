@@ -38,6 +38,8 @@ contract Oracle is IOracle, CoreRef {
 
     uint256 beaconEthBalance = 0;
 
+    uint64 public activateValidatorDuration = 10 minutes;
+
     mapping(bytes32 => uint256) public candidates;
     mapping(bytes32 => bool) private submittedVotes;
 
@@ -239,7 +241,6 @@ contract Oracle is IOracle, CoreRef {
 
     /// @notice function to update latestQuorom
     /// @param latestQuorom ...
-    
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
@@ -288,7 +289,7 @@ contract Oracle is IOracle, CoreRef {
 
     /// @notice function to check if adress is oracle member
     /// @return oracleMember  
-    function isOralce(address member) public view returns (bool) {
+    function isOracle(address member) public view returns (bool) {
         return oracleMembers.contains(member);
     }
 
@@ -352,13 +353,18 @@ contract Oracle is IOracle, CoreRef {
     }
 
 
+
+    function updateValidatorActivationDuration(uint64 activationDuration) external onlyGovernor {
+        activateValidatorDuration = activationDuration;
+    }
+
     /// @notice function to activate an array of validators
     /// @param _publicKeys public key array of validators
     function activateValidator(bytes[] memory _publicKeys) external override {
-        if (isOralce(msg.sender) == false) revert("Not oracle Member");
+        if (isOracle(msg.sender) == false) revert("Not oracle Member");
         require(
-            block.timestamp >= lastValidatorActivation + 24 hours,
-            "voted before an hour"
+            block.timestamp >= lastValidatorActivation + activateValidatorDuration,
+            "voted before minimum duration"
         );
         bytes32 candidateId = keccak256(abi.encode(_publicKeys));
         bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
@@ -402,7 +408,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 latestNonce,
         uint32 numberOfValidators
     ) external override {
-        if (isOralce(msg.sender) == false) revert("Not oracle Member");
+        if (isOracle(msg.sender) == false) revert("Not oracle Member");
         require(
             latestEthBalance >= (numberOfValidators * 32e9),
             "Number of Validators or Balance incorrect"

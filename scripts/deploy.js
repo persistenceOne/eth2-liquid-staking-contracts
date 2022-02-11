@@ -11,7 +11,7 @@
 const { upgrades } = require("hardhat");
 const hre = require("hardhat");
 
-const epochsPerTimePeriod = 10;
+const epochsPerTimePeriod = 4;
 const slotsPerEpoch = 32;
 const secondsPerSlot = 12;
 const genesisTime = 1644295551;
