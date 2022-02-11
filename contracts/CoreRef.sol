@@ -36,6 +36,11 @@ abstract contract CoreRef is ICoreRef, Pausable {
         _;
     }
 
+    modifier onlyNodeOperator() {
+        require(_core.isNodeOperator(msg.sender), "Permissions: Caller is not a Node Operator");
+        _;
+    }
+
     modifier onlyGovernor() {
         require(
             _core.isGovernor(msg.sender),

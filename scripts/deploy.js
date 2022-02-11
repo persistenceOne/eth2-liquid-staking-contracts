@@ -11,10 +11,10 @@
 const { upgrades } = require("hardhat");
 const hre = require("hardhat");
 
-const epochsPerTimePeriod = 10;
+const epochsPerTimePeriod = 4;
 const slotsPerEpoch = 32;
 const secondsPerSlot = 12;
-const genesisTime = 1616508000;
+const genesisTime = 1644295551;
 const qourom = 2;
 const pStakeCommisisons = 200;
 const valCommissions = 300;
@@ -24,7 +24,7 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 async function main() {
 
   let [defaultSigner] = await hre.ethers.getSigners();
-
+  console.log(defaultSigner.address);
   treasury = "0x0A821de645e9070196bFC9bE7ED6A8d7673737bb";
 
   const Core = await hre.ethers.getContractFactory("Core");
@@ -34,9 +34,8 @@ async function main() {
   await core.init();
   console.log("Core initialized");
 
-  const stkEth = await hre.ethers.getContractFactory("StkEth");
-  const stkEthContact = await stkEth.deploy(core.address);
-  console.log("StkEth deployed to ", stkEthContact.address);
+  const stkEth = await core.stkEth();
+  console.log("StkEth deployed to ", stkEth.address);
 
   let depositContractAddress = "0x27c495e778386b57e9e9F309f4cF99DFc3103e1F";
 
@@ -60,18 +59,23 @@ async function main() {
 
   
   let Issuer = await ethers.getContractFactory("Issuer");
-  const issuer = await Issuer.deploy(core.address, BigInt(32e32), 1000, depositContractAddress);
+  const issuer = await Issuer.deploy(core.address, BigInt(32e17), 1000, depositContractAddress);
   console.log("Issuer deployed to ", issuer.address);
 
   let StakingPool = await ethers.getContractFactory("StakingPool");
   const stakingPool = await upgrades.deployProxy(StakingPool,[pstake.address, depositContractAddress, core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"],{ initializer: 'initialize' });
   console.log("StakingPool deployed to ", stakingPool.address);
   
-  await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
-  await core.set(await core.PSTAKE_TREASURY(), treasury);
-  await core.set(await core.WITHDRAWAL_CREDENTIAL(), "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc");
-  await core.set(await core.KEYS_MANAGER(), keysManager.address);
+  let tx = await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
+  await tx.wait();
+  tx = await core.set(await core.PSTAKE_TREASURY(), treasury);
+  await tx.wait();
+  tx = await core.set(await core.WITHDRAWAL_CREDENTIAL(), "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc");
+  await tx.wait();
+  tx = await core.set(await core.KEYS_MANAGER(), keysManager.address);
+  await tx.wait()
   await core.set(await core.ISSUER(), issuer.address);
+  await tx.wait();
 
   const oracle = await Oracle.deploy(
     epochsPerTimePeriod,
@@ -85,21 +89,28 @@ async function main() {
   );
   console.log("Oracle deployed to ", oracle.address);
 
-  await oracle.updateQuorom(qourom);
+  tx = await oracle.updateQuorom(qourom);
+  await tx.wait();
   console.log("Quorom initialized to ", qourom);
 
-  await oracle.updateValidatorQuorom(3);
+  tx = await oracle.updateValidatorQuorom(3);
+  await tx.wait();
   console.log("Validator updation Quorom initialized to ", qourom);
 
 
-  await core.set(await core.ORACLE(), oracle.address);
-  
-  await core.grantMinter(oracle.address);
-  await core.grantMinter(issuer.address);
-  await core.grantBurner(stakingPool.address);
+  tx = await core.set(await core.ORACLE(), oracle.address);
+  await tx.wait();
+
+  tx = await core.grantMinter(oracle.address);
+  await tx.wait();
+  tx = await core.grantMinter(issuer.address);
+  await tx.wait();
+  tx = await core.grantBurner(stakingPool.address);
+  await tx.wait();
   console.log("Minter granted to issuer and oracle");
 
-  await core.grantKeyAdmin(defaultSigner.address);
+  tx = await core.grantNodeOperator(defaultSigner.address);
+  await tx.wait();
   console.log("key admin granted to: ", defaultSigner.address);
 
   await keysManager.addValidator(

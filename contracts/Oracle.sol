@@ -38,12 +38,14 @@ contract Oracle is IOracle, CoreRef {
 
     uint256 beaconEthBalance = 0;
 
+    uint64 public activateValidatorDuration = 10 minutes;
+
     mapping(bytes32 => uint256) public candidates;
     mapping(bytes32 => bool) private submittedVotes;
 
     BeaconData beaconData;
 
-    EnumerableSet.AddressSet private oracleMember;
+    EnumerableSet.AddressSet private oracleMembers;
 
     uint256 public override pricePerShare = 1e18;
 
@@ -144,7 +146,7 @@ contract Oracle is IOracle, CoreRef {
     /// @notice function to return oracle member length
     /// @return number of oracle members
     function oracleMemberLength() public view returns (uint256) {
-        return EnumerableSet.length(oracleMember);
+        return oracleMembers.length();
     }
 
 
@@ -239,7 +241,6 @@ contract Oracle is IOracle, CoreRef {
 
     /// @notice function to update latestQuorom
     /// @param latestQuorom ...
-    
     function updateQuorom(uint32 latestQuorom) external onlyGovernor {
         require(latestQuorom >= 0, "Quorom less that 0");
         quorom = latestQuorom;
@@ -271,27 +272,25 @@ contract Oracle is IOracle, CoreRef {
         override
         onlyGovernor
     {
-        if (EnumerableSet.add(oracleMember, newOracleMember) == false)
-            revert("Oracle member already present");
+        require(oracleMembers.add(newOracleMember), "Oracle member already present");
         emit oracleMemberAdded(newOracleMember, oracleMemberLength());
     }
 
-    function removeOracleMember(address oracleMeberToDelete)
+    function removeOracleMember(address oracleMemberToDelete)
         external
         override
         onlyGovernor
     {
-        if (EnumerableSet.contains(oracleMember, oracleMeberToDelete) == false)
-            revert("Oracle member not present");
-        else EnumerableSet.remove(oracleMember, oracleMeberToDelete);
-        emit oracleMemberRemoved(oracleMeberToDelete, oracleMemberLength());
+        require(oracleMembers.contains(oracleMemberToDelete), "Oracle member not present");
+        oracleMembers.remove(oracleMemberToDelete);
+        emit oracleMemberRemoved(oracleMemberToDelete, oracleMemberLength());
     }
 
 
     /// @notice function to check if adress is oracle member
     /// @return oracleMember  
-    function isOralce(address member) public view returns (bool) {
-        return (EnumerableSet.contains(oracleMember, member));
+    function isOracle(address member) public view returns (bool) {
+        return oracleMembers.contains(member);
     }
 
 
@@ -354,13 +353,18 @@ contract Oracle is IOracle, CoreRef {
     }
 
 
+
+    function updateValidatorActivationDuration(uint64 activationDuration) external onlyGovernor {
+        activateValidatorDuration = activationDuration;
+    }
+
     /// @notice function to activate an array of validators
     /// @param _publicKeys public key array of validators
     function activateValidator(bytes[] memory _publicKeys) external override {
-        if (isOralce(msg.sender) == false) revert("Not oracle Member");
+        if (isOracle(msg.sender) == false) revert("Not oracle Member");
         require(
-            block.timestamp >= lastValidatorActivation + 24 hours,
-            "voted before an hour"
+            block.timestamp >= lastValidatorActivation + activateValidatorDuration,
+            "voted before minimum duration"
         );
         bytes32 candidateId = keccak256(abi.encode(_publicKeys));
         bytes32 voteId = keccak256(abi.encode(msg.sender, candidateId));
@@ -379,7 +383,7 @@ contract Oracle is IOracle, CoreRef {
                 delete submittedVotes[
                     keccak256(
                         abi.encode(
-                            EnumerableSet.at(oracleMember, i),
+                            oracleMembers.at(i),
                             candidateId
                         )
                     )
@@ -404,7 +408,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 latestNonce,
         uint32 numberOfValidators
     ) external override {
-        if (isOralce(msg.sender) == false) revert("Not oracle Member");
+        if (isOracle(msg.sender) == false) revert("Not oracle Member");
         require(
             latestEthBalance >= (numberOfValidators * 32e9),
             "Number of Validators or Balance incorrect"
@@ -451,7 +455,7 @@ contract Oracle is IOracle, CoreRef {
                 delete submittedVotes[
                     keccak256(
                         abi.encode(
-                            EnumerableSet.at(oracleMember, i),
+                            oracleMembers.at(i),
                             candidateId
                         )
                     )

@@ -51,7 +51,7 @@ contract KeysManager is IKeysManager, CoreRef {
         bytes calldata publicKey,
         bytes calldata signature,
         address nodeOperator
-    ) external override onlyKeyAdmin {
+    ) external override onlyNodeOperator {
         Validator memory _validator = _validators[publicKey];
         require(
             _validator.state == State.INVALID,
@@ -75,7 +75,6 @@ contract KeysManager is IKeysManager, CoreRef {
 
     /// @notice function for activating the status of an array of validator public keys
     /// @param publicKeys public keys array of validators.
-
     function activateValidator(bytes[] memory publicKeys) external override {
         require(
             msg.sender == core().oracle(),
