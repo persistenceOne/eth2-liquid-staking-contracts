@@ -43,7 +43,7 @@ contract Oracle is IOracle, CoreRef {
 
     BeaconData beaconData;
 
-    EnumerableSet.AddressSet private oracleMember;
+    EnumerableSet.AddressSet private oracleMembers;
 
     uint256 public override pricePerShare = 1e18;
 
@@ -144,7 +144,7 @@ contract Oracle is IOracle, CoreRef {
     /// @notice function to return oracle member length
     /// @return number of oracle members
     function oracleMemberLength() public view returns (uint256) {
-        return EnumerableSet.length(oracleMember);
+        return oracleMembers.length();
     }
 
 
@@ -271,27 +271,25 @@ contract Oracle is IOracle, CoreRef {
         override
         onlyGovernor
     {
-        if (EnumerableSet.add(oracleMember, newOracleMember) == false)
-            revert("Oracle member already present");
+        require(oracleMembers.add(newOracleMember), "Oracle member already present");
         emit oracleMemberAdded(newOracleMember, oracleMemberLength());
     }
 
-    function removeOracleMember(address oracleMeberToDelete)
+    function removeOracleMember(address oracleMemberToDelete)
         external
         override
         onlyGovernor
     {
-        if (EnumerableSet.contains(oracleMember, oracleMeberToDelete) == false)
-            revert("Oracle member not present");
-        else EnumerableSet.remove(oracleMember, oracleMeberToDelete);
-        emit oracleMemberRemoved(oracleMeberToDelete, oracleMemberLength());
+        require(oracleMembers.contains(oracleMemberToDelete), "Oracle member not present");
+        oracleMembers.remove(oracleMemberToDelete);
+        emit oracleMemberRemoved(oracleMemberToDelete, oracleMemberLength());
     }
 
 
     /// @notice function to check if adress is oracle member
     /// @return oracleMember  
     function isOralce(address member) public view returns (bool) {
-        return (EnumerableSet.contains(oracleMember, member));
+        return oracleMembers.contains(member);
     }
 
 
@@ -379,7 +377,7 @@ contract Oracle is IOracle, CoreRef {
                 delete submittedVotes[
                     keccak256(
                         abi.encode(
-                            EnumerableSet.at(oracleMember, i),
+                            oracleMembers.at(i),
                             candidateId
                         )
                     )
@@ -451,7 +449,7 @@ contract Oracle is IOracle, CoreRef {
                 delete submittedVotes[
                     keccak256(
                         abi.encode(
-                            EnumerableSet.at(oracleMember, i),
+                            oracleMembers.at(i),
                             candidateId
                         )
                     )
