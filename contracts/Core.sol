@@ -5,7 +5,6 @@ import "./interfaces/ICore.sol";
 import "./Permissions.sol";
 import "./interfaces/IStkEth.sol";
 import "./token/StkEth.sol";
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
