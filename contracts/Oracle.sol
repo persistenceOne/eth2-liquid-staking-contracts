@@ -49,8 +49,6 @@ contract Oracle is IOracle, CoreRef {
 
     uint256 public override pricePerShare = 1e18;
 
-    KeysManager key;
-
     event quoromUpdated(
         uint32 indexed latestQuorom,
         uint256 indexed nonce,
@@ -78,7 +76,6 @@ contract Oracle is IOracle, CoreRef {
     /// @param _slotsPerEpoch slots per Epoch
     /// @param _genesisTime time of genesis
     /// @param _core core reference
-    /// @param _keysManager keysmanager reference
     /// @param _pStakeCommission protocol commission
     /// @param _valCommission validator commissiom
     constructor(
@@ -87,11 +84,9 @@ contract Oracle is IOracle, CoreRef {
         uint64 _secondsPerSlot,
         uint64 _genesisTime,
         address _core,
-        address _keysManager,
         uint32 _pStakeCommission,
         uint32 _valCommission
     ) CoreRef(_core) {
-        key = KeysManager(_keysManager);
         beaconData.epochsPerTimePeriod = _epochsPerTimePeriod;
         beaconData.slotsPerEpoch = _slotsPerEpoch;
         beaconData.secondsPerSlot = _secondsPerSlot;
@@ -392,7 +387,7 @@ contract Oracle is IOracle, CoreRef {
 
             // clean up candidate
             delete candidates[candidateId];
-            key.activateValidator(_publicKeys);
+            IKeysManager(core().keysManager()).activateValidator(_publicKeys);
             lastValidatorActivation = block.timestamp;
             emit validatorActivated(_publicKeys);
         }
