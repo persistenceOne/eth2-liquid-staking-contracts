@@ -336,6 +336,13 @@ contract Oracle is IOracle, CoreRef {
         uint256 price = ((rewardBase + deltaEth) * 1e18) /
             (activatedValidators * DEPOSIT_LIMIT);
 
+        
+        if(price <= pricePerShare) {
+            price = pricePerShare;
+        }else{
+            pricePerShare = price;
+        }
+
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
         //console.log("valEthShare", valEthShare);
@@ -344,7 +351,6 @@ contract Oracle is IOracle, CoreRef {
         uint256 stkEthMinted = mintStkEthForEth(valEthShare, address(this), price);
         IStakingPool(core().validatorPool()).updateRewardPerValidator(stkEthMinted);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
-        pricePerShare = price;
     }
 
 
@@ -404,10 +410,7 @@ contract Oracle is IOracle, CoreRef {
         uint32 numberOfValidators
     ) external override {
         if (isOracle(msg.sender) == false) revert("Not oracle Member");
-        require(
-            latestEthBalance >= (numberOfValidators * 32e9),
-            "Number of Validators or Balance incorrect"
-        );
+        
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
 
         require(
