@@ -97,12 +97,19 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
         require(_msgSender() == core.oracle(), "StakingPool: only oracle can call to slash");
 
+        uint256 pstakeBalance = pstake.balanceOf(address(this));
+        
+        if(pstakeBalance == 0){
+            return;
+        }
+
         address[] memory path = new address[](3);
         path[0] = address(pstake);
         path[1] = WETH;
         path[2] = address(stkEth);
         uint256[] memory amountsIn = router.getAmountsIn(amount, path);
-        uint256 pstakeBalance = pstake.balanceOf(address(this));
+
+
         if(amountsIn[0] > pstakeBalance){
             pstake.approve(address(router), pstakeBalance);
             router.swapExactTokensForTokens(pstakeBalance, 0, path, address(this), block.timestamp + 100);

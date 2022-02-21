@@ -206,20 +206,6 @@ contract Oracle is IOracle, CoreRef {
             (beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
     }
 
-
-    /// @notice ...
-    /// @return ...
-    function _getCurrentEpochIdExt(BeaconData memory _beaconSpec)
-        external
-        view
-        returns (uint256)
-    {
-        return
-            (block.timestamp - beaconData.genesisTime) /
-            (beaconData.slotsPerEpoch * beaconData.secondsPerSlot);
-    }
-
-
     /// @notice function to return the last completed epoch id
     /// @return lastCompletedEpochId
     function getLastCompletedEpochId() external view returns (uint256) {
@@ -318,10 +304,8 @@ contract Oracle is IOracle, CoreRef {
         // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
         if (stkEthBurned < stkEthToSlash) {
             deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
-            pricePerShare =
-                ((rewardBase - deltaEth) * 1e18) /
-                (activatedValidators * DEPOSIT_LIMIT);
-            //console.log("Price per share is: ", pricePerShare);
+            uint256 percentChange = deltaEth*1e18/rewardBase;
+            pricePerShare = (pricePerShare * (1e18 - percentChange))/1e18;
         }
     }
 
@@ -332,25 +316,16 @@ contract Oracle is IOracle, CoreRef {
         // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
         // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
         // and then respectively mint new stkEth to treasury and validator pool address
-
-        uint256 price = ((rewardBase + deltaEth) * 1e18) /
-            (activatedValidators * DEPOSIT_LIMIT);
-
-        
-        if(price <= pricePerShare) {
-            price = pricePerShare;
-        }else{
-            pricePerShare = price;
-        }
+        uint256 percentChange = deltaEth*1e18/rewardBase;
+        uint256 price = (pricePerShare * (1e18 + percentChange))/1e18;
 
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
-        //console.log("valEthShare", valEthShare);
-        //console.log("protocolEthShare", protocolEthShare);
 
         uint256 stkEthMinted = mintStkEthForEth(valEthShare, address(this), price);
         IStakingPool(core().validatorPool()).updateRewardPerValidator(stkEthMinted);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
+        pricePerShare = price;
     }
 
 
@@ -471,9 +446,9 @@ contract Oracle is IOracle, CoreRef {
                     numberOfValidators - activatedValidators
                 );
             }
+            
             activatedValidators = numberOfValidators;
-            //console.log("rewardBase", rewardBase);
-            //console.log("latestEthBalance", latestEthBalance);
+
             if (latestEthBalance > rewardBase) {
                 distributeRewards(latestEthBalance - rewardBase, rewardBase);
             } else if (latestEthBalance < rewardBase) {

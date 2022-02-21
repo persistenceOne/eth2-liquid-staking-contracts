@@ -9,8 +9,6 @@ import "../interfaces/IOracle.sol";
 /// @author Ankit Parashar
 contract StkEth is IStkEth, ERC20, CoreRef {
 
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH =
         0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
@@ -18,6 +16,11 @@ contract StkEth is IStkEth, ERC20, CoreRef {
     mapping(address => uint256) public nonces;
 
     event burnToken(address user, uint256 amount);
+
+    // solhint-disable-next-line var-name-mixedcase
+    bytes32 private immutable _DOMAIN_SEPARATOR;
+
+    uint256 public immutable deploymentChainId;
 
     constructor (address _core) public 
         CoreRef(_core)
@@ -28,7 +31,12 @@ contract StkEth is IStkEth, ERC20, CoreRef {
         assembly {
             chainId := chainid()
         }
-        DOMAIN_SEPARATOR = keccak256(
+        deploymentChainId = chainId;
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator(chainId);        
+    }
+
+    function _calculateDomainSeparator(uint256 chainId) internal view returns (bytes32) {
+        return keccak256(
             abi.encode(
                 keccak256(
                     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
@@ -38,8 +46,13 @@ contract StkEth is IStkEth, ERC20, CoreRef {
                 chainId,
                 address(this)
             )
-        );        
+        );
+    }
 
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        uint256 chainId;
+        assembly {chainId := chainid()}
+        return chainId == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(chainId);
     }
 
     function mint(address to, uint256 amount) public override virtual onlyMinter {
@@ -66,7 +79,7 @@ contract StkEth is IStkEth, ERC20, CoreRef {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    DOMAIN_SEPARATOR,
+                    DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
                             PERMIT_TYPEHASH,

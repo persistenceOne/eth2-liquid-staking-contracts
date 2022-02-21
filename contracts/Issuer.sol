@@ -193,12 +193,11 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     }
 
 
-
     /// @notice function for sending 1 Ether to a node operator address.
     /// @param nodeOperator address of the node operator
-    function withdrawalverificationDeposit(address nodeOperator) public nonReentrant  {
+    function withdrawalverificationDeposit(address nodeOperator) internal nonReentrant  {
 
-        (bool sent, bytes memory data) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
+        (bool sent, ) = nodeOperator.call{value: VERIFICATION_DEPOSIT }("");
         require(sent, "Issuer: Failed to send to Node Operator");
     }
 
