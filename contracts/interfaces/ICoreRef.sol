@@ -9,6 +9,8 @@ import "./IOracle.sol";
 /// @author Ankit Parashar
 interface ICoreRef {
 
+    event SetCore(address _core);
+
     function setCore(address core) external;
 
     function pause() external;

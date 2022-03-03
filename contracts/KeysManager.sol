@@ -55,7 +55,7 @@ contract KeysManager is IKeysManager, CoreRef {
             _validator.state == State.INVALID,
             "KeysManager: validator already exist"
         );
-        // require(_isEmptySigningKey(publicKey), "KeysManager: empty signing key");
+        require(_isEmptySigningKey(publicKey), "KeysManager: empty signing key");
         // _validator = validator;
 
         _validator.state = State.VALID;
@@ -84,8 +84,8 @@ contract KeysManager is IKeysManager, CoreRef {
             }
             require(validator.state == State.VALID, "KeysManager: Invalid Key");
             validator.state = State.ACTIVATED;
-            emit ActivateValidator(publicKeys);
         }
+        emit ActivateValidator(publicKeys);
     }
 
 

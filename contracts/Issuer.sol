@@ -72,6 +72,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         onlyGovernor
     {
         minActivatingDeposit = _minActivatingDeposit;
+        emit SetMinActivationDeposit(_minActivatingDeposit);
     }
 
 
@@ -83,6 +84,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     {
         require(_pendingValidatorsLimit < 10000, "Issuer: invalid limit");
         pendingValidatorsLimit = _pendingValidatorsLimit;
+        emit SetPendingValidatorsLimit(_pendingValidatorsLimit);
     }
 
 
@@ -98,6 +100,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         );
 
         pendingValidators = pendingValidators - newActiveValidators;
+        emit UpdatePendingValidators(pendingValidators);
     }
 
 

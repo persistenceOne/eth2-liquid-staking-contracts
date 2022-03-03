@@ -5,13 +5,9 @@ import "./interfaces/ICore.sol";
 import "./Permissions.sol";
 import "./interfaces/IStkEth.sol";
 import "./token/StkEth.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Core is Initializable, ICore, Permissions {
-
-    using SafeERC20 for IERC20;
+contract Core is ICore, Permissions {
 
     IStkEth public override stkEth;
 
@@ -26,7 +22,11 @@ contract Core is Initializable, ICore, Permissions {
 
     mapping(bytes32 => address) public override coreContract;
 
-    function init() external override initializer {
+    constructor() public {
+        _init();
+    }
+
+    function _init() internal {
 
         _setupGovernor(msg.sender);
 
@@ -51,6 +51,7 @@ contract Core is Initializable, ICore, Permissions {
         // 0x0100000000000000000000003d80b31a78c30fc628f20b2c89d7ddbf6e53cedc
         // console.log("WITHDRAWAL_CREDENTIAL_BYTES32", WITHDRAWAL_CREDENTIAL_BYTES32);
         WITHDRAWAL_CREDENTIAL_BYTES32 = withdrawcreds;
+        emit SetWithdrawalCredential(withdrawcreds);
     }
 
 
@@ -72,6 +73,7 @@ contract Core is Initializable, ICore, Permissions {
     
     function set(bytes32 _key, address _address) external override onlyGovernor {
         coreContract[_key] = _address; 
+        emit SetCoreContract(_key, _address);
     }
 
 }

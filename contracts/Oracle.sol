@@ -99,7 +99,7 @@ contract Oracle is IOracle, CoreRef {
         );
         pStakeCommission = _pStakeCommission;
         valCommission = _valCommission;
-        stkEth().approve(core().validatorPool(), type(uint256).max);
+        require(stkEth().approve(core().validatorPool(), type(uint256).max));
     }
 
     /// @notice fucntion that returns the 

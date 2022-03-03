@@ -25,10 +25,10 @@ async function main() {
   const core = await Core.deploy();
   console.log("Core deployed to ", core.address);
 
-  await core.init();
-
-  const stkEth = await hre.ethers.getContractFactory("StkEth");
-  const stkEthContact = await stkEth.deploy(core.address);
+  const stkEthContact = await ethers.getContractAt(
+    "StkEth",
+    await core.stkEth()
+  );
   console.log("StkEth deployed to ", stkEthContact.address);
 
   let DepositContract = await ethers.getContractFactory("DummyDepositContract");
