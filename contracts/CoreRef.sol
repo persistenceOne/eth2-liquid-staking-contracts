@@ -13,6 +13,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
 
     constructor(address core){
         _core = ICore(core);
+        emit SetCore(core);
     }
 
     modifier ifMinterSelf() {
@@ -63,6 +64,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
     /// @param core the new core address
     function setCore(address core) external override onlyGovernor {
         _core = ICore(core);
+        emit SetCore(core);
     }
 
     function stkEth() public view override returns (IStkEth) {

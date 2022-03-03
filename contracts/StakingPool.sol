@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { IStakingPool } from "./interfaces/IStakingPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IUniswapRouter } from "./interfaces/external/IUniswapRouter.sol";
-import {IStkEth} from "./interfaces/IStkEth.sol";
+import { IStkEth } from "./interfaces/IStkEth.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ICore} from "./interfaces/ICore.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
@@ -37,6 +37,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
     function initialize (IERC20 _pstake, IUniswapRouter _router, ICore _core, address _weth) 
         public initializer 
     {
+        require(_weth != address(0), "Invalid weth address");
         __Ownable_init();
         pstake = _pstake;
         core = _core;
@@ -50,7 +51,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
         uint256 totalValidators = IOracle(core.oracle()).activatedValidators() + IIssuer(core.issuer()).pendingValidators();
         
-        stkEth.transferFrom(_msgSender(), address(this), newReward);
+        require(stkEth.transferFrom(_msgSender(), address(this), newReward), "Transfer failed");
 
         accRewardPerValidator += newReward*1e12/totalValidators;
     }
@@ -70,28 +71,6 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         user.rewardDebt = accRewardPerValidator*userValidators/1e12; 
         user.amount = userValidators;
     }
-
-    // function stake(uint256 amount) external {
-
-    //     pstake.transferFrom(_msgSender(), address(this), amount);
-
-    //     uint256 shares = calcShares(amount);
-    //     userShare[_msgSender()] = userShare[_msgSender()] + shares;
-
-    //     totalShares = totalShares + shares;
-    //     totalStake = totalStake + amount;
-    // }
-
-
-    // function calcShares(uint256 amount) public view returns (uint256 shares){
-    //     if(totalStake == 0 && totalShares == 0){
-    //         shares = amount;
-    //     }else{
-    //         shares = amount * totalShares/totalStake;
-    //     }
-    // }
-    
-
 
     function slash(uint256 amount) external override {
 

@@ -8,7 +8,9 @@ import "./IStkEth.sol";
 /// @author Ankit Parashar
 interface ICore is IPermissions {
 
-    function init() external;
+    event SetCoreContract(bytes32 _key, address indexed _address);
+
+    event SetWithdrawalCredential(bytes32 _withdrawalCreds);
 
     function stkEth() external view returns(IStkEth);
 
