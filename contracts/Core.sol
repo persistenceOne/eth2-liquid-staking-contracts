@@ -43,13 +43,11 @@ contract Core is ICore, Permissions {
     }
 
     function withdrawalCredential() external view override returns(bytes32) {
-        // return coreContract[WITHDRAWAL_CREDENTIAL];
         return WITHDRAWAL_CREDENTIAL_BYTES32;
     }
 
     function setWithdrawalCredential(bytes32 withdrawcreds) external onlyGovernor{
         // 0x0100000000000000000000003d80b31a78c30fc628f20b2c89d7ddbf6e53cedc
-        // console.log("WITHDRAWAL_CREDENTIAL_BYTES32", WITHDRAWAL_CREDENTIAL_BYTES32);
         WITHDRAWAL_CREDENTIAL_BYTES32 = withdrawcreds;
         emit SetWithdrawalCredential(withdrawcreds);
     }

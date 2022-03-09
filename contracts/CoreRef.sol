@@ -12,6 +12,7 @@ abstract contract CoreRef is ICoreRef, Pausable {
     ICore private _core;
 
     constructor(address core){
+        require(core != address(0), "CoreRef: Zero address");
         _core = ICore(core);
         emit SetCore(core);
     }
