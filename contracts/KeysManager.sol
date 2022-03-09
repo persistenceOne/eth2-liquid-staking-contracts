@@ -13,7 +13,7 @@ contract KeysManager is IKeysManager, CoreRef {
 
     uint256 public constant PUBKEY_LENGTH = 48;
     uint256 public constant SIGNATURE_LENGTH = 96;
-    uint256 public constant VALIDATOR_DEPOSIT = 22e17;
+    uint256 public constant VALIDATOR_DEPOSIT = 31e18;
 
     event AddValidator(bytes publicKey, bytes signature, address nodeOperator);
     event ActivateValidator(bytes[] publicKey);

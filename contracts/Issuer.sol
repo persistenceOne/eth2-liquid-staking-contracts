@@ -11,7 +11,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuar
 /// @title Issuer
 /// @notice contract for issuance of StkEth
 contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
-    uint256 public constant VALIDATOR_DEPOSIT = 22e17;
+    uint256 public constant VALIDATOR_DEPOSIT = 31e18;
     uint256 public constant VERIFICATION_DEPOSIT = 1e18;
     
     uint256 public constant BASIS_POINT = 10000;
