@@ -29,7 +29,6 @@ contract Oracle is IOracle, CoreRef {
     uint256 lastCompletedEpochId;
     uint256 lastValidatorActivation;
     Counters.Counter private nonce;
-    uint64 lastCompletedTimeFrame;
     uint32 quorom;
     uint32 validatorQuorom;
     uint256 public override activatedValidators;
@@ -262,8 +261,7 @@ contract Oracle is IOracle, CoreRef {
         override
         onlyGovernor
     {
-        require(oracleMembers.contains(oracleMemberToDelete), "Oracle member not present");
-        oracleMembers.remove(oracleMemberToDelete);
+        require(oracleMembers.remove(oracleMemberToDelete), "Oracle member not present");
         emit oracleMemberRemoved(oracleMemberToDelete, oracleMemberLength());
     }
 
@@ -337,7 +335,7 @@ contract Oracle is IOracle, CoreRef {
     /// @notice function to activate an array of validators
     /// @param _publicKeys public key array of validators
     function activateValidator(bytes[] memory _publicKeys) external override {
-        if (isOracle(msg.sender) == false) revert("Not oracle Member");
+        require(isOracle(msg.sender),"Not oracle Member");
         require(
             block.timestamp >= lastValidatorActivation + activateValidatorDuration,
             "voted before minimum duration"
@@ -384,7 +382,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 latestNonce,
         uint32 numberOfValidators
     ) external override {
-        if (isOracle(msg.sender) == false) revert("Not oracle Member");
+        require(isOracle(msg.sender),"Not oracle Member");
         
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
 

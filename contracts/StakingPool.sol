@@ -6,10 +6,11 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IUniswapRouter } from "./interfaces/external/IUniswapRouter.sol";
 import { IStkEth } from "./interfaces/IStkEth.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {ICore} from "./interfaces/ICore.sol";
-import {IOracle} from "./interfaces/IOracle.sol";
-import {IIssuer} from "./interfaces/IIssuer.sol";
-import {IKeysManager} from "./interfaces/IKeysManager.sol";
+import { ICore } from "./interfaces/ICore.sol";
+import { IOracle } from "./interfaces/IOracle.sol";
+import { IIssuer } from "./interfaces/IIssuer.sol";
+import { IKeysManager } from "./interfaces/IKeysManager.sol";
+import { IPriceOracle } from "./interfaces/IPriceOracle.sol";
 
 contract StakingPool is IStakingPool, OwnableUpgradeable{
 
@@ -29,21 +30,32 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
     ICore public core;
 
+    IPriceOracle public oracle;
+
     uint256 public accRewardPerValidator;
 
+    uint256 public DEVIATION; // 5% deviation is acceptable
+    uint256 public constant BASIS_POINT = 10000;
 
     mapping(address => UserInfo) public userInfos;
 
-    function initialize (IERC20 _pstake, IUniswapRouter _router, ICore _core, address _weth) 
+    function initialize (
+        IPriceOracle _oracle,
+        IERC20 _pstake, 
+        IUniswapRouter _router, 
+        ICore _core, 
+        address _weth) 
         public initializer 
     {
         require(_weth != address(0), "Invalid weth address");
         __Ownable_init();
+        oracle = _oracle;
         pstake = _pstake;
         core = _core;
         stkEth = core.stkEth();
         router = _router;
         WETH = _weth;
+        DEVIATION = 500;
     }
 
 
@@ -81,13 +93,16 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         if(pstakeBalance == 0){
             return;
         }
-
+        uint256 pstakePrice = oracle.price();
         address[] memory path = new address[](3);
         path[0] = address(pstake);
         path[1] = WETH;
         path[2] = address(stkEth);
         uint256[] memory amountsIn = router.getAmountsIn(amount, path);
 
+        if(!validateDeviation(pstakePrice, amountsIn[0], amount)){
+            return;
+        }
 
         if(amountsIn[0] > pstakeBalance){
             pstake.approve(address(router), pstakeBalance);
@@ -98,6 +113,15 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         }
 
         stkEth.burn(address(this), stkEth.balanceOf(address(this)));
+
+    }
+
+    function validateDeviation(uint256 price, uint256 amountIn, uint256 amountOut) internal view returns (bool) {
+
+        uint256 tradePrice = amountIn*1e18/amountOut;
+
+        return tradePrice <= price * (BASIS_POINT + DEVIATION)/BASIS_POINT && 
+            tradePrice >= price * (BASIS_POINT - DEVIATION)/BASIS_POINT;
 
     }
 

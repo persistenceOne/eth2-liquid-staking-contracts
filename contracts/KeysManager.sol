@@ -13,7 +13,7 @@ contract KeysManager is IKeysManager, CoreRef {
 
     uint256 public constant PUBKEY_LENGTH = 48;
     uint256 public constant SIGNATURE_LENGTH = 96;
-    uint256 public constant VALIDATOR_DEPOSIT = 32e18;
+    uint256 public constant VALIDATOR_DEPOSIT = 22e17;
 
     event AddValidator(bytes publicKey, bytes signature, address nodeOperator);
     event ActivateValidator(bytes[] publicKey);
@@ -43,7 +43,7 @@ contract KeysManager is IKeysManager, CoreRef {
 
     /// @notice function to add a new validator
     /// @param publicKey public key of the validator
-    /// @param signature ...
+    /// @param signature signature with private key needed for eth2 deposit
     /// @param nodeOperator address of the node operator
     function addValidator(
         bytes calldata publicKey,
@@ -55,8 +55,6 @@ contract KeysManager is IKeysManager, CoreRef {
             _validator.state == State.INVALID,
             "KeysManager: validator already exist"
         );
-        require(_isEmptySigningKey(publicKey), "KeysManager: empty signing key");
-        // _validator = validator;
 
         _validator.state = State.VALID;
         _validator.signature = signature;
@@ -75,14 +73,11 @@ contract KeysManager is IKeysManager, CoreRef {
     function activateValidator(bytes[] memory publicKeys) external override {
         require(
             msg.sender == core().oracle(),
-            "KeysManager: Only issuer can activate"
+            "KeysManager: Only oracle can activate"
         );
         for (uint256 i = 0; i < publicKeys.length; i++) {
             Validator storage validator = _validators[publicKeys[i]];
-            if (validator.state == State.ACTIVATED) {
-                revert("Validator already activated");
-            }
-            require(validator.state == State.VALID, "KeysManager: Invalid Key");
+            require(validator.state == State.VALID, "KeysManager: Validator not in valid state");
             validator.state = State.ACTIVATED;
         }
         emit ActivateValidator(publicKeys);
@@ -193,24 +188,4 @@ contract KeysManager is IKeysManager, CoreRef {
     }
     
 
-
-    /// @notice function for checking if signing key ...
-    /// @param _key ...
-    function _isEmptySigningKey(bytes memory _key)
-        internal
-        pure
-        returns (bool)
-    {
-        assert(_key.length == PUBKEY_LENGTH);
-        // algorithm applicability constraint
-        assert(PUBKEY_LENGTH >= 32 && PUBKEY_LENGTH <= 64);
-
-        uint256 k1;
-        uint256 k2;
-        assembly {
-            k1 := mload(add(_key, 0x20))
-            k2 := mload(add(_key, 0x40))
-        }
-        return 0 == k1 && 0 == (k2 >> ((2 * 32 - PUBKEY_LENGTH) * 8));
-    }
 }

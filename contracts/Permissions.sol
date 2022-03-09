@@ -13,9 +13,7 @@ abstract contract Permissions is IPermissions, AccessControl {
     bytes32 public constant KEY_ADMIN_ROLE = keccak256("KEY_ADMIN_ROLE");
 
     constructor(){
-        // Appointed as a governor so guardian can have indirect access to revoke ability
-        _setupGovernor(address(this));
-
+        
         _setRoleAdmin(MINTER_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(BURNER_ROLE, GOVERN_ROLE);

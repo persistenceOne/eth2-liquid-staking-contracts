@@ -11,17 +11,16 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuar
 /// @title Issuer
 /// @notice contract for issuance of StkEth
 contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
-    uint256 public constant VALIDATOR_DEPOSIT = 31e18;
+    uint256 public constant VALIDATOR_DEPOSIT = 22e17;
     uint256 public constant VERIFICATION_DEPOSIT = 1e18;
     
+    uint256 public constant BASIS_POINT = 10000;
 
-    IDepositContract public DEPOSIT_CONTRACT;
+    IDepositContract public immutable DEPOSIT_CONTRACT;
     uint256 public override pendingValidators;
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
 
-
-    /// event MintStkEthForEth (uint256 amount, address user, uint256 stkEthToMint);
 
     mapping(address => mapping(uint256 => uint256)) public activations;
 
@@ -30,17 +29,18 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     /// @param core address of the core 
     /// @param _minActivatingDeposit minimum amount of ether deposited to activate ...
     /// @param _pendingValidatorsLimit ...
-    /// @param demoDeposit ...
+    /// @param _depositContract Deposit Contract address for Eth2
     constructor(
         address core,
         uint256 _minActivatingDeposit,
         uint256 _pendingValidatorsLimit,
-        address demoDeposit
+        address _depositContract
     ) CoreRef(core) {
-        DEPOSIT_CONTRACT = IDepositContract(demoDeposit);
+        require(_depositContract != address(0), "Issuer: Zero address");
+        DEPOSIT_CONTRACT = IDepositContract(_depositContract);
         minActivatingDeposit = _minActivatingDeposit;
 
-        require(_pendingValidatorsLimit < 10000, "Issuer: invalid limit");
+        require(_pendingValidatorsLimit < BASIS_POINT, "Issuer: invalid limit");
         pendingValidatorsLimit = _pendingValidatorsLimit;
     }
 
@@ -51,7 +51,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     function activatingDeposit()
         public
         view
-        returns (uint256 minActivatingDeposit)
+        returns (uint256)
     {
         return minActivatingDeposit;
     }
@@ -62,7 +62,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     function pendingValidatorLimit()
         public
         view
-        returns (uint256 pendingValidatorsLimit)
+        returns (uint256)
     {
         return pendingValidatorsLimit;
     }
@@ -82,7 +82,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         external
         onlyGovernor
     {
-        require(_pendingValidatorsLimit < 10000, "Issuer: invalid limit");
+        require(_pendingValidatorsLimit < BASIS_POINT, "Issuer: invalid limit");
         pendingValidatorsLimit = _pendingValidatorsLimit;
         emit SetPendingValidatorsLimit(_pendingValidatorsLimit);
     }
@@ -112,7 +112,6 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         uint256 stkEthToMint = (amount * 1e18) / stkEth().pricePerShare();
 
         stkEth().mint(user, stkEthToMint);
-        /// emit MintStkEthForEth (amount, user,stkEthToMint);
     }
 
 
@@ -133,8 +132,8 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
 
 
         if (
-            validatorIndex * 1e4 <=
-            _activatedValidators * (pendingValidatorsLimit + 1e4)
+            validatorIndex * BASIS_POINT <=
+            _activatedValidators * (pendingValidatorsLimit + BASIS_POINT)
         ) {
             // 10001
             mintStkEthForEth(msg.value, msg.sender);
@@ -163,8 +162,8 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         require(amount > 0, "Issuer: invalid validator index");
       
         require(
-            _validatorIndex * 1e4 <=
-                activatedValidators * (pendingValidatorsLimit + 1e4),
+            _validatorIndex * BASIS_POINT <=
+                activatedValidators * (pendingValidatorsLimit + BASIS_POINT),
             "Issuer: validator is not active yet"
         );
 

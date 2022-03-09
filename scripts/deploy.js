@@ -31,11 +31,8 @@ async function main() {
   const core = await Core.deploy();
   console.log("Core deployed to ", core.address);
 
-  await core.init();
-  console.log("Core initialized");
-
   const stkEth = await core.stkEth();
-  console.log("StkEth deployed to ", stkEth.address);
+  console.log("StkEth deployed to ", stkEth);
 
   let depositContractAddress = "0x27c495e778386b57e9e9F309f4cF99DFc3103e1F";
 
@@ -63,14 +60,14 @@ async function main() {
   console.log("Issuer deployed to ", issuer.address);
 
   let StakingPool = await ethers.getContractFactory("StakingPool");
-  const stakingPool = await upgrades.deployProxy(StakingPool,[pstake.address, depositContractAddress, core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"],{ initializer: 'initialize' });
+  const stakingPool = await upgrades.deployProxy(StakingPool,[depositContractAddress, pstake.address, "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F", core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"],{ initializer: 'initialize' });
   console.log("StakingPool deployed to ", stakingPool.address);
   
   let tx = await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
   await tx.wait();
   tx = await core.set(await core.PSTAKE_TREASURY(), treasury);
   await tx.wait();
-  tx = await core.set(await core.WITHDRAWAL_CREDENTIAL(), "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc");
+  tx = await core.setWithdrawalCredential("0x0100000000000000000000003d80b31a78c30fc628f20b2c89d7ddbf6e53cedc");
   await tx.wait();
   tx = await core.set(await core.KEYS_MANAGER(), keysManager.address);
   await tx.wait()
@@ -83,7 +80,6 @@ async function main() {
     secondsPerSlot,
     genesisTime,
     core.address,
-    keysManager.address,
     pStakeCommisisons,
     valCommissions
   );
@@ -93,7 +89,7 @@ async function main() {
   await tx.wait();
   console.log("Quorom initialized to ", qourom);
 
-  tx = await oracle.updateValidatorQuorom(3);
+  tx = await oracle.updateValidatorQuorom(qourom);
   await tx.wait();
   console.log("Validator updation Quorom initialized to ", qourom);
 
@@ -112,6 +108,16 @@ async function main() {
   tx = await core.grantNodeOperator(defaultSigner.address);
   await tx.wait();
   console.log("key admin granted to: ", defaultSigner.address);
+
+  tx = await oracle.addOracleMember("0x2E93e2190C8f2f1825Ab40a5899b0c64F60B241d");
+  await tx.wait();
+
+  tx = await oracle.addOracleMember("0xe9CB071F2Ce62728c4700348fC7e668C76b589dE");
+  await tx.wait();
+
+  tx = await oracle.addOracleMember("0x74f02Bd9CdaBc08010214E14928535ecf590FfAb");
+  await tx.wait();
+
 
   await keysManager.addValidator(
     "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
