@@ -4,6 +4,10 @@ pragma solidity ^0.8.0;
 /// @title Oracle interface
 /// @author Ankit Parashar
 interface IOracle {
+
+    event Distribute(uint256 amount);
+    event Slash(uint256 amount);
+
     function pricePerShare() external view returns (uint256);
 
     function activatedValidators() external view returns (uint256);

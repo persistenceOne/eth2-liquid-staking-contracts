@@ -305,6 +305,7 @@ contract Oracle is IOracle, CoreRef {
             uint256 percentChange = deltaEth*1e18/rewardBase;
             pricePerShare = (pricePerShare * (1e18 - percentChange))/1e18;
         }
+        emit Slash(deltaEth);
     }
 
     /// @notice function to distribute rewards by setting price per share
@@ -324,6 +325,7 @@ contract Oracle is IOracle, CoreRef {
         IStakingPool(core().validatorPool()).updateRewardPerValidator(stkEthMinted);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
         pricePerShare = price;
+        emit Distribute(deltaEth);
     }
 
 

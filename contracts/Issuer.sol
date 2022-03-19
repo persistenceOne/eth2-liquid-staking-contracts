@@ -169,6 +169,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
 
         delete activations[_account][_validatorIndex];
         mintStkEthForEth(amount, _account);
+        emit ActivatePendingDeposit(msg.sender, _validatorIndex, amount);
     }
 
 
