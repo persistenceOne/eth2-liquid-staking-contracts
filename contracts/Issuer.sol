@@ -143,6 +143,8 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
             activations[msg.sender][validatorIndex] =
                 activations[msg.sender][validatorIndex] +
                 msg.value;
+            emit AddPendingDeposit(msg.sender, validatorIndex, activations[msg.sender][validatorIndex] +
+                msg.value);
         }
     }
 
