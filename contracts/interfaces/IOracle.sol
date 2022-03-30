@@ -19,8 +19,7 @@ interface IOracle {
     function pushData(
         uint256 latestEthBalance,
         uint256 latestNonce,
-        uint32 numberOfValidators,
-        uint256 epochID
+        uint32 numberOfValidators
     ) external;
 
     function activateValidator(bytes[] calldata _publicKeys) external;

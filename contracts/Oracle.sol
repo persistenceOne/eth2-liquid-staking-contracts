@@ -62,17 +62,11 @@ contract Oracle is IOracle, CoreRef {
         uint256 indexed oracleMemberLength
     );
     event dataPushed(
+        address indexed oracleAddress,
         uint256 indexed latestEthBalance,
         uint256 indexed latestNonce,
         uint32 numberOfValidators,
-        uint256 indexed epochID
-    );
-    event dataPushedOracle(
-        address indexed oracleMember,
-        uint256 latestEthBalance,
-        uint256 indexed latestNonce,
-        uint32 numberOfValidators,
-        uint256 indexed epochID
+        uint256 indexed lastCompletedEpoch
     );
     event validatorActivated(bytes[] _publicKey);
     event commissionsUpdated(uint32 _pStakeCommission, uint32 _valCommission);
@@ -389,11 +383,9 @@ contract Oracle is IOracle, CoreRef {
     function pushData(
         uint256 latestEthBalance,
         uint256 latestNonce,
-        uint32 numberOfValidators,
-        uint256 epochID
+        uint32 numberOfValidators
     ) external override {
         require(isOracle(msg.sender), "Not oracle Member");
-        emit dataPushedOracle(msg.sender,latestEthBalance,latestNonce,numberOfValidators,epochID);
         uint256 currentFrameEpochId = _getCurrentEpochId(beaconData);
 
         require(
@@ -427,6 +419,7 @@ contract Oracle is IOracle, CoreRef {
         uint256 candidateNewVotes = candidates[candidateId] + 1;
         candidates[candidateId] = candidateNewVotes;
         uint256 oracleMemberSize = oracleMemberLength();
+        emit dataPushed(msg.sender,latestEthBalance, latestNonce, numberOfValidators, lastCompletedEpochId);
 
         if (candidateNewVotes >= quorom) {
             // clean up votes
@@ -469,7 +462,6 @@ contract Oracle is IOracle, CoreRef {
         uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId) *
         beaconData.slotsPerEpoch *
         beaconData.secondsPerSlot;
-        emit dataPushed(latestEthBalance, latestNonce, numberOfValidators, epochID);
     }
 
 
