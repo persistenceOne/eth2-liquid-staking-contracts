@@ -63,7 +63,7 @@ contract Oracle is IOracle, CoreRef {
     );
     event dataPushed(
         address indexed oracleAddress,
-        uint256 indexed latestEthBalance,
+        uint256 latestEthBalance,
         uint256 indexed latestNonce,
         uint32 numberOfValidators,
         uint256 indexed lastCompletedEpoch

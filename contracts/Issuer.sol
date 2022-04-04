@@ -118,7 +118,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     /// @notice function for issuer to stake
     function stake() public payable whenNotPaused {
         require(msg.value > 0, "Issuer: can't stake zero");
-
+        emit Stake(msg.sender,msg.value,block.timestamp);
         if (msg.value <= minActivatingDeposit) {
             mintStkEthForEth(msg.value, msg.sender);
             return;
@@ -144,7 +144,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
                 activations[msg.sender][validatorIndex] +
                 msg.value;
             emit AddPendingDeposit(msg.sender, validatorIndex, activations[msg.sender][validatorIndex] +
-                msg.value);
+                msg.value,block.timestamp);
         }
     }
 
@@ -171,7 +171,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
 
         delete activations[_account][_validatorIndex];
         mintStkEthForEth(amount, _account);
-        emit ActivatePendingDeposit(msg.sender, _validatorIndex, amount);
+        emit ActivatePendingDeposit(msg.sender, _validatorIndex, amount,block.timestamp);
     }
 
 
