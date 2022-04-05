@@ -45,7 +45,10 @@ module.exports = {
     },
     goerli: {
       url: process.env.RPC_URL,
-      accounts: [process.env.PRIVATE_KEY]
+      accounts: [process.env.PRIVATE_KEY],
+      gas: 500000,
+      gasPrice: 2000000009,
+      gasMultiplier: 2
     }
   },
   // gasReporter: {

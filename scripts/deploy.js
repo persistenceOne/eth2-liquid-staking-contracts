@@ -11,10 +11,10 @@
 const { upgrades } = require("hardhat");
 const hre = require("hardhat");
 
-const epochsPerTimePeriod = 4;
+const epochsPerTimePeriod = 200;
 const slotsPerEpoch = 32;
 const secondsPerSlot = 12;
-const genesisTime = 1644295551;
+const genesisTime = 1616508000;
 const qourom = 2;
 const pStakeCommisisons = 200;
 const valCommissions = 300;
@@ -25,7 +25,7 @@ async function main() {
 
   let [defaultSigner] = await hre.ethers.getSigners();
   console.log(defaultSigner.address);
-  treasury = "0x0A821de645e9070196bFC9bE7ED6A8d7673737bb";
+  treasury = "0x8E35f095545c56b07c942A4f3B055Ef1eC4CB148";
 
   const Core = await hre.ethers.getContractFactory("Core");
   const core = await Core.deploy();
@@ -34,10 +34,11 @@ async function main() {
   const stkEth = await core.stkEth();
   console.log("StkEth deployed to ", stkEth);
 
-  let depositContractAddress = "0x27c495e778386b57e9e9F309f4cF99DFc3103e1F";
+  let depositContractAddress = "0xff50ed3d0ec03ac01d4c79aad74928bff48a7b2b";
 
   let PStake = await hre.ethers.getContractFactory('pStake');
   let pstake = await PStake.deploy();
+  console.log("pstake deployed to ", pstake.address);
 
   let KeysManager = await ethers.getContractFactory("KeysManager");
   const keysManager = await KeysManager.deploy(core.address);
@@ -60,14 +61,14 @@ async function main() {
   console.log("Issuer deployed to ", issuer.address);
 
   let StakingPool = await ethers.getContractFactory("StakingPool");
-  const stakingPool = await upgrades.deployProxy(StakingPool,[depositContractAddress, pstake.address, "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F", core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"],{ initializer: 'initialize' });
+  const stakingPool = await upgrades.deployProxy(StakingPool,[depositContractAddress, pstake.address, "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"],{ initializer: 'initialize' });
   console.log("StakingPool deployed to ", stakingPool.address);
   
   let tx = await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
   await tx.wait();
   tx = await core.set(await core.PSTAKE_TREASURY(), treasury);
   await tx.wait();
-  tx = await core.setWithdrawalCredential("0x0100000000000000000000003d80b31a78c30fc628f20b2c89d7ddbf6e53cedc");
+  tx = await core.setWithdrawalCredential("0x0100000000000000000000008E35f095545c56b07c942A4f3B055Ef1eC4CB148");
   await tx.wait();
   tx = await core.set(await core.KEYS_MANAGER(), keysManager.address);
   await tx.wait()
@@ -109,22 +110,22 @@ async function main() {
   await tx.wait();
   console.log("key admin granted to: ", defaultSigner.address);
 
-  tx = await oracle.addOracleMember("0x2E93e2190C8f2f1825Ab40a5899b0c64F60B241d");
-  await tx.wait();
+  // tx = await oracle.addOracleMember("0x2E93e2190C8f2f1825Ab40a5899b0c64F60B241d");
+  // await tx.wait();
+  //
+  // tx = await oracle.addOracleMember("0xe9CB071F2Ce62728c4700348fC7e668C76b589dE");
+  // await tx.wait();
+  //
+  // tx = await oracle.addOracleMember("0x74f02Bd9CdaBc08010214E14928535ecf590FfAb");
+  // await tx.wait();
 
-  tx = await oracle.addOracleMember("0xe9CB071F2Ce62728c4700348fC7e668C76b589dE");
-  await tx.wait();
 
-  tx = await oracle.addOracleMember("0x74f02Bd9CdaBc08010214E14928535ecf590FfAb");
-  await tx.wait();
-
-
-  await keysManager.addValidator(
-    "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
-    "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
-    "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
-  );
-  console.log("Validator added");
+  // await keysManager.addValidator(
+  //   "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
+  //   "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+  //   "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+  // );
+  // console.log("Validator added");
   
 }
 
