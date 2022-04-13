@@ -57,7 +57,7 @@ async function main() {
 
   
   let Issuer = await ethers.getContractFactory("Issuer");
-  const issuer = await Issuer.deploy(core.address, BigInt(32e17), 1000, depositContractAddress);
+  const issuer = await Issuer.deploy(core.address, BigInt(32e18), 1000, depositContractAddress);
   console.log("Issuer deployed to ", issuer.address);
 
   let StakingPool = await ethers.getContractFactory("StakingPool");
