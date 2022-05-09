@@ -20,6 +20,7 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     uint256 public override pendingValidators;
     uint256 public minActivatingDeposit;
     uint256 public pendingValidatorsLimit;
+    uint256 public ethStaked;
 
 
     mapping(address => mapping(uint256 => uint256)) public activations;
@@ -119,33 +120,33 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     function stake() public payable whenNotPaused {
         require(msg.value > 0, "Issuer: can't stake zero");
         emit Stake(msg.sender,msg.value,block.timestamp);
-        if (msg.value <= minActivatingDeposit) {
-            mintStkEthForEth(msg.value, msg.sender);
-            return;
-        }
+        ethStaked = ethStaked + msg.value;
+        mintStkEthForEth(msg.value, msg.sender);
+//        if (msg.value <= minActivatingDeposit) {
+//            mintStkEthForEth(msg.value, msg.sender);
+//            return;
+//        }
 
         // mint tokens if current pending validators limit is not exceeded
-        uint256 _pendingValidators = pendingValidators +
-            ((address(this).balance) / (VALIDATOR_DEPOSIT));
-        uint256 _activatedValidators = oracle().activatedValidators();
-        uint256 validatorIndex = _activatedValidators + _pendingValidators;
-
-
-        if (
-            validatorIndex * BASIS_POINT <=
-            _activatedValidators * (pendingValidatorsLimit + BASIS_POINT)
-        ) {
-            // 10001
-            mintStkEthForEth(msg.value, msg.sender);
-  
-        } else {
-
-            activations[msg.sender][validatorIndex] =
-                activations[msg.sender][validatorIndex] +
-                msg.value;
-            emit AddPendingDeposit(msg.sender, validatorIndex, activations[msg.sender][validatorIndex] +
-                msg.value,block.timestamp);
-        }
+//        uint256 _pendingValidators = pendingValidators +
+//            ((address(this).balance) / (VALIDATOR_DEPOSIT));
+//        uint256 _activatedValidators = oracle().activatedValidators();
+//        uint256 validatorIndex = _activatedValidators + _pendingValidators;
+//
+//        if (
+//            validatorIndex * BASIS_POINT <=
+//            _activatedValidators * (pendingValidatorsLimit + BASIS_POINT)
+//        ) {
+//            // 10001
+//            mintStkEthForEth(msg.value, msg.sender);
+//
+//        } else {
+//
+//            activations[msg.sender][validatorIndex] =
+//                activations[msg.sender][validatorIndex] +
+//                msg.value;
+//            emit AddPendingDeposit(msg.sender, validatorIndex, activations[msg.sender][validatorIndex],block.timestamp);
+//        }
     }
 
 
@@ -153,26 +154,26 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     /// @notice Mint stkEth after waiting for validator to get active
     /// @param _account account of users whose stkEth need to be minted
     /// @param _validatorIndex index of validator which got activated
-    function activate(address _account, uint256 _validatorIndex)
-       external
-       whenNotPaused
-    {
-        uint256 activatedValidators = oracle().activatedValidators();
-       
-
-        uint256 amount = activations[_account][_validatorIndex];
-        require(amount > 0, "Issuer: invalid validator index");
-      
-        require(
-            _validatorIndex * BASIS_POINT <=
-                activatedValidators * (pendingValidatorsLimit + BASIS_POINT),
-            "Issuer: validator is not active yet"
-        );
-
-        delete activations[_account][_validatorIndex];
-        mintStkEthForEth(amount, _account);
-        emit ActivatePendingDeposit(msg.sender, _validatorIndex, amount,block.timestamp);
-    }
+//    function activate(address _account, uint256 _validatorIndex)
+//       external
+//       whenNotPaused
+//    {
+//        uint256 activatedValidators = oracle().activatedValidators();
+//
+//
+//        uint256 amount = activations[_account][_validatorIndex];
+//        require(amount > 0, "Issuer: invalid validator index");
+//
+//        require(
+//                _validatorIndex * BASIS_POINT <=
+//                    activatedValidators * (pendingValidatorsLimit + BASIS_POINT),
+//            "Issuer: validator is not active yet"
+//        );
+//
+//        delete activations[_account][_validatorIndex];
+//        mintStkEthForEth(amount, _account);
+//        emit ActivatePendingDeposit(msg.sender, _validatorIndex, amount,block.timestamp);
+//    }
 
 
 
