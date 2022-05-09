@@ -38,7 +38,7 @@ const increaseTime = async (seconds) => {
 };
 
 describe("contract tests", function () {
-    let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, oracle5;
+    let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4;
 
     const epochsPerTimePeriod = 10;
     const slotsPerEpoch = 32;
@@ -411,6 +411,7 @@ describe("contract tests", function () {
     describe("Should implement distributeRewards", function () {
         it("Should update Price Per Share", async function () {
             await this.issuer.connect(user1).stake({value: BigInt(64e18)});
+
             await this.oracle
                 .connect(oracle2)
                 .activateValidator([
@@ -425,10 +426,9 @@ describe("contract tests", function () {
             );
 
             let nonce = parseInt(await this.oracle.currentNonce());
-
             await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
             await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
-
+            expect(await this.oracle.pricepershare()).to.be.above(oldpricepershare);
             it("Should update Treasury Balance", async function () {
                 pricePerShare = await this.oracle.pricePerShare();
                 let pstakeEth = utils.parseEther((500 / 10000).toString());
@@ -446,6 +446,8 @@ describe("contract tests", function () {
                     valEth
                 );
             });
+
+
         });
     });
 
@@ -465,12 +467,9 @@ describe("contract tests", function () {
             await this.issuer.depositToEth2(
                 "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
             );
-            console.log("eth staked by users:",BigNumber.from(await this.issuer.ethStakedIssuer()).toNumber());
-            console.log("stketh with users",(await this.stketh.totalSupply()))
-            console.log("==============================================")
+
             await this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce, 1);
             await this.oracle.connect(oracle2).pushData(BigInt(32e9), nonce, 1);
-            console.log("price per share",await this.oracle.pricePerShare())
             await this.issuer.connect(user2).stake({value: BigInt(55e18)});
 
             await this.issuer.depositToEth2(
@@ -479,11 +478,14 @@ describe("contract tests", function () {
 
             nonce = parseInt(await this.oracle.currentNonce());
             await increaseTime(32*12*10);
+            let epoch1pricePerShare = await this.oracle.pricePerShare();
+
+
             await this.oracle.connect(oracle1).pushData(BigInt(66e9), nonce, 2);
             await this.oracle.connect(oracle2).pushData(BigInt(66e9), nonce, 2);
 
             let pricePerShare = await this.oracle.pricePerShare();
-
+            expect(pricePerShare).to.be.above(epoch1pricePerShare);
 
             nonce = parseInt(await this.oracle.currentNonce());
 
@@ -491,6 +493,7 @@ describe("contract tests", function () {
             await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
             await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
             let newPricePerShare = await this.oracle.pricePerShare();
+
             expect(pricePerShare).to.be.above(newPricePerShare);
 
             // let stkEthToSlash = utils.parseEther("1").div(pricePerShare);

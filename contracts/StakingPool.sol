@@ -80,7 +80,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
             stkEth.transfer(usr, pending);
         }
 
-        user.rewardDebt = accRewardPerValidator*userValidators/1e12; 
+        user.rewardDebt = accRewardPerValidator*userValidators/1e12;
         user.amount = userValidators;
     }
 

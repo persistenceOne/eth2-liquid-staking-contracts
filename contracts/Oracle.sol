@@ -36,8 +36,7 @@ contract Oracle is IOracle, CoreRef {
     uint32 valCommission;
 
     uint256 beaconEthBalance = 0;
-    uint256 beaconRewardBalance = 0;
-
+    int256 beaconRewardBalance = 0;
     uint64 public activateValidatorDuration = 10 minutes;
 
     mapping(bytes32 => uint256) public candidates;
@@ -46,7 +45,6 @@ contract Oracle is IOracle, CoreRef {
     BeaconData beaconData;
 
     EnumerableSet.AddressSet private oracleMembers;
-
     uint256 public override pricePerShare = 1e18;
 
     event quoromUpdated(
@@ -292,42 +290,52 @@ contract Oracle is IOracle, CoreRef {
 
     /// @notice function for slashing balance of a pool 
     /// @param deltaEth difference in eth balance since last distribution
-    /// @param rewardBase ...
-    function slash(uint256 deltaEth, uint256 beaconRewardBalance) internal {
+    /// @param beaconRewardEarned ...
+    function slash(uint256 deltaEth,int256 beaconRewardEarned) internal {
         //
-//        uint256 stkEthToSlash = (deltaEth * 1e18) / pricePerShare;
-        uint256 price = (IIssuer(core().issuer()).ethStaked() + beaconRewardBalance - deltaEth) / IStkEth(core().stkEth()).totalSupply();
-
-//        deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
-//        uint256 percentChange = deltaEth * 1e18 / rewardBase;
-//        pricePerShare = (pricePerShare * (1e18 - percentChange)) / 1e18;
-//
-//        uint256 preTotal = stkEth().totalSupply();
-//
-////        IStakingPool(core().validatorPool()).slash(stkEthToSlash);
-//
-//        uint256 stkEthBurned = preTotal - stkEth().totalSupply();
-//        // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
-//        if (stkEthBurned < stkEthToSlash) {
-//            deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
-//            uint256 percentChange = deltaEth * 1e18 / rewardBase;
-//            pricePerShare = (pricePerShare * (1e18 - percentChange)) / 1e18;
-//        }
+        //        uint256 stkEthToSlash = (deltaEth * 1e18) / pricePerShare;
+        uint256 price = pricePerShare;
+        if (beaconRewardEarned>0) {
+            price = (IIssuer(core().issuer()).ethStakedIssuer() + uint256(beaconRewardEarned)) * 1e18 / (IStkEth(core().stkEth()).totalSupply());
+        }
+        else {
+            price = (IIssuer(core().issuer()).ethStakedIssuer() - uint256(beaconRewardEarned)) * 1e18 / (IStkEth(core().stkEth()).totalSupply());
+        }
+        //  todo: in future for insurance mechanism
+        //        deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
+        //        uint256 percentChange = deltaEth * 1e18 / rewardBase;
+        //        pricePerShare = (pricePerShare * (1e18 - percentChange)) / 1e18;
+        //
+        //        uint256 preTotal = stkEth().totalSupply();
+        //
+        ////        IStakingPool(core().validatorPool()).slash(stkEthToSlash);
+        //
+        //        uint256 stkEthBurned = preTotal - stkEth().totalSupply();
+        //        // If staking pool not able to burn enough stkEth, then adjust pricePerShare for remainingSupply
+        //        if (stkEthBurned < stkEthToSlash) {
+        //            deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
+        //            uint256 percentChange = deltaEth * 1e18 / rewardBase;
+        //            pricePerShare = (pricePerShare * (1e18 - percentChange)) / 1e18;
+        //        }
+        pricePerShare = price;
         emit Slash(deltaEth);
     }
 
     /// @notice function to distribute rewards by setting price per share
     /// @param deltaEth difference in eth balance since last distribution
-    /// @param rewardBase ...
-    function distributeRewards(uint256 deltaEth, uint256 beaconRewardBalance) internal {
+    /// @param beaconRewardEarned ...
+    function distributeRewards(uint256 deltaEth, int256 beaconRewardEarned) internal {
         // calculate fees need to be deducted in terms of stkEth which will be minted for treasury & validators
-        // while calculating we will assume 1 stkEth * pricePerShare == 1 eth in Eth2
-        // and then respectively mint new stkEth to treasury and validator pool address
-        //        uint256 percentChange = deltaEth * 1e18 / rewardBase;
-//        uint256 price = (pricePerShare * (1e18 + percentChange)) / 1e18;
+
         uint256 valEthShare = (valCommission * deltaEth) / BASIS_POINT;
         uint256 protocolEthShare = (pStakeCommission * deltaEth) / BASIS_POINT;
-        uint256 price = (IIssuer(core().issuer()).ethStaked() + beaconRewardBalance - (valEthShare + protocolEthShare)) / IStkEth(core().stkEth()).totalSupply();
+        uint256 price = pricePerShare;
+        if (beaconRewardEarned > 0) {
+            price = (IIssuer(core().issuer()).ethStakedIssuer() + uint256(beaconRewardEarned) - (valEthShare + protocolEthShare)) * 1e18 / IStkEth(core().stkEth()).totalSupply();
+        }
+        else{
+            price = (IIssuer(core().issuer()).ethStakedIssuer() - uint256(beaconRewardEarned) - (valEthShare + protocolEthShare)) * 1e18 / IStkEth(core().stkEth()).totalSupply();
+        }
         uint256 stkEthMinted = mintStkEthForEth(valEthShare, address(this), price);
         IStakingPool(core().validatorPool()).updateRewardPerValidator(stkEthMinted);
         mintStkEthForEth(protocolEthShare, core().pstakeTreasury(), price);
@@ -425,7 +433,6 @@ contract Oracle is IOracle, CoreRef {
         candidates[candidateId] = candidateNewVotes;
         uint256 oracleMemberSize = oracleMemberLength();
         emit dataPushed(msg.sender, latestEthBalance, latestNonce, numberOfValidators, lastCompletedEpochId);
-
         if (candidateNewVotes >= quorom) {
             // clean up votes
             delete submittedVotes[voteId];
@@ -456,17 +463,17 @@ contract Oracle is IOracle, CoreRef {
             activatedValidators = numberOfValidators;
 
             if (latestEthBalance > rewardBase) {
-                beaconRewardBalance = beaconRewardBalance + (latestEthBalance - rewardBase);
+                beaconRewardBalance = beaconRewardBalance + int(latestEthBalance - rewardBase);
                 distributeRewards(latestEthBalance - rewardBase, beaconRewardBalance);
                 //                beaconRewardBalance = beaconRewardBalance + (latestEthBalance - rewardBase);
             } else if (latestEthBalance < rewardBase) {
-                beaconRewardBalance = beaconRewardBalance + (rewardBase - latestEthBalance);
+                beaconRewardBalance = beaconRewardBalance - int(rewardBase - latestEthBalance);
                 slash(rewardBase - latestEthBalance, beaconRewardBalance);
-                //                beaconRewardBalance = beaconRewardBalance + (rewardBase - latestEthBalance);
             }
 
             beaconEthBalance = latestEthBalance;
             lastCompletedEpochId = currentFrameEpochId;
+
         }
         uint256 timeElapsed = (currentFrameEpochId - lastCompletedEpochId) *
         beaconData.slotsPerEpoch *
