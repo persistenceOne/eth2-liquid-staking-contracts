@@ -42,9 +42,9 @@ describe("Issuer", function () {
     const slotsPerEpoch = 32;
     const secondsPerSlot = 12;
     const genesisTime = 1616508000;
-    const pStakeCommisisons = 200;
+    const pStakeCommisisons = 500;
 
-    const valCommissions = 300;
+    const valCommissions = 500;
     [defaultSigner, user1, user2, user3, treasury, oracle1, oracle2, oracle3] =
       await ethers.getSigners();
 
@@ -58,7 +58,9 @@ describe("Issuer", function () {
 
     let Core = await ethers.getContractFactory("Core");
     this.core = await Core.deploy();
-    await this.core.init();
+    this.stkEth = await this.core.stkEth();
+    console.log("stketh address");
+    console.log(this.stkEth);
 
     let KeysManager = await ethers.getContractFactory("KeysManager");
     this.keysManager = await KeysManager.deploy(this.core.address);
@@ -75,16 +77,15 @@ describe("Issuer", function () {
       "StkEth",
       await this.core.stkEth()
     );
-
+    await this.core.set(await this.core.VALIDATOR_POOL(), stakingPool.address);
     let Oracle = await ethers.getContractFactory("Oracle");
-
+    console.log(this.core.address);
     this.oracle = await Oracle.deploy(
       epochsPerTimePeriod,
       slotsPerEpoch,
       secondsPerSlot,
       genesisTime,
       this.core.address,
-      this.keysManager.address,
       pStakeCommisisons,
       valCommissions
     );
@@ -110,7 +111,7 @@ describe("Issuer", function () {
     await this.core.grantMinter(this.oracle.address);
     await this.core.grantMinter(this.issuer.address);
     await this.core.grantKeyAdmin(defaultSigner.address);
-
+    console.log("test");
     await this.keysManager
       .connect(defaultSigner)
       .addValidator(
