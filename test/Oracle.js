@@ -426,9 +426,10 @@ describe("contract tests", function () {
             );
 
             let nonce = parseInt(await this.oracle.currentNonce());
+            let oldpricepershare = await this.oracle.pricePerShare()
             await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
             await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
-            expect(await this.oracle.pricepershare()).to.be.above(oldpricepershare);
+            expect(await this.oracle.pricePerShare()).to.be.above(oldpricepershare);
             it("Should update Treasury Balance", async function () {
                 pricePerShare = await this.oracle.pricePerShare();
                 let pstakeEth = utils.parseEther((500 / 10000).toString());

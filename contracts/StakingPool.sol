@@ -84,6 +84,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         user.amount = userValidators;
     }
 
+    // keeping this for future insurance mechanism
     function slash(uint256 amount) external override {
 
         require(_msgSender() == core.oracle(), "StakingPool: only oracle can call to slash");
