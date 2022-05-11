@@ -22,9 +22,6 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     uint256 public ethStaked = 0;
 
 
-    mapping(address => mapping(uint256 => uint256)) public activations;
-
-
     /// @notice constructor for initializing core
     /// @param core address of the core 
     /// @param _pendingValidatorsLimit ...
@@ -36,14 +33,9 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     ) CoreRef(core) {
         require(_depositContract != address(0), "Issuer: Zero address");
         DEPOSIT_CONTRACT = IDepositContract(_depositContract);
-
         require(_pendingValidatorsLimit < BASIS_POINT, "Issuer: invalid limit");
         pendingValidatorsLimit = _pendingValidatorsLimit;
     }
-
-
-
-
 
 
     /// @notice function returns pending validator limit.
@@ -63,8 +55,6 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
     {
         return ethStaked;
     }
-
-
 
 
     /// @notice function for setting the count of pending validators limit.
@@ -93,7 +83,6 @@ contract Issuer is CoreRef, IIssuer, ReentrancyGuard {
         pendingValidators = pendingValidators - newActiveValidators;
         emit UpdatePendingValidators(pendingValidators);
     }
-
 
 
     /// @notice function to mint Stk Eth for Eth.

@@ -219,6 +219,10 @@ contract Oracle is IOracle, CoreRef {
         return beaconEthBalance;
     }
 
+    function getTotalRewards() external view returns (int256) {
+        return beaconRewardBalance;
+    }
+
 
     /// @notice function to update latestQuorom
     /// @param latestQuorom ...
@@ -299,7 +303,7 @@ contract Oracle is IOracle, CoreRef {
             price = (IIssuer(core().issuer()).ethStakedIssuer() + uint256(beaconRewardEarned)) * 1e18 / (IStkEth(core().stkEth()).totalSupply());
         }
         else {
-            price = (IIssuer(core().issuer()).ethStakedIssuer() - uint256(beaconRewardEarned)) * 1e18 / (IStkEth(core().stkEth()).totalSupply());
+            price = (IIssuer(core().issuer()).ethStakedIssuer() - uint256(beaconRewardEarned*int256(-1))) * 1e18 / (IStkEth(core().stkEth()).totalSupply());
         }
         //  todo: in future for insurance mechanism
         //        deltaEth = deltaEth - ((stkEthBurned * pricePerShare) / 1e18);
@@ -334,7 +338,7 @@ contract Oracle is IOracle, CoreRef {
             price = (IIssuer(core().issuer()).ethStakedIssuer() + uint256(beaconRewardEarned) - (valEthShare + protocolEthShare)) * 1e18 / IStkEth(core().stkEth()).totalSupply();
         }
         else{
-            price = (IIssuer(core().issuer()).ethStakedIssuer() - uint256(beaconRewardEarned) - (valEthShare + protocolEthShare)) * 1e18 / IStkEth(core().stkEth()).totalSupply();
+            price = (IIssuer(core().issuer()).ethStakedIssuer() - uint256(beaconRewardEarned*int256(-1)) - (valEthShare + protocolEthShare)) * 1e18 / IStkEth(core().stkEth()).totalSupply();
         }
         uint256 stkEthMinted = mintStkEthForEth(valEthShare, address(this), price);
         IStakingPool(core().validatorPool()).updateRewardPerValidator(stkEthMinted);

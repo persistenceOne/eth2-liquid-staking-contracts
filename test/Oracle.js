@@ -487,6 +487,7 @@ describe("contract tests", function () {
 
             let pricePerShare = await this.oracle.pricePerShare();
             expect(pricePerShare).to.be.above(epoch1pricePerShare);
+            expect(1e18/pricePerShare).to.be.below(1);
 
             nonce = parseInt(await this.oracle.currentNonce());
 
@@ -500,6 +501,51 @@ describe("contract tests", function () {
             // let stkEthToSlash = utils.parseEther("1").div(pricePerShare);
 
             // expect(await this.stkEth.balanceOf(stakingPool.address)).to.equal(((valEth.sub(stkEthToSlash))));
+        });
+        it('should have price per share less than 1', async function () {
+            let nonce = parseInt(await this.oracle.currentNonce());
+
+            await this.issuer.connect(user1).stake({value: BigInt(50e18)});
+
+            await this.oracle
+                .connect(oracle2)
+                .activateValidator([
+                    "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712",
+                    "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951",
+                ]);
+
+            await this.issuer.depositToEth2(
+                "0xa908f145cecb1adfb69d78cef5c43dd29f9236d739161d83c7eef577f6a3d52a3f059e31590b5d685c87931739d09951"
+            );
+
+            await this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce, 1);
+            await this.oracle.connect(oracle2).pushData(BigInt(32e9), nonce, 1);
+            await this.issuer.connect(user2).stake({value: BigInt(55e18)});
+
+            await this.issuer.depositToEth2(
+                "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
+            );
+
+            nonce = parseInt(await this.oracle.currentNonce());
+            await increaseTime(32*12*10);
+            let epoch1pricePerShare = await this.oracle.pricePerShare();
+
+            console.log(epoch1pricePerShare)
+            await this.oracle.connect(oracle1).pushData(BigInt(63e9), nonce, 2);
+            await this.oracle.connect(oracle2).pushData(BigInt(63e9), nonce, 2);
+
+            let pricePerShare = await this.oracle.pricePerShare();
+            expect(1e18/pricePerShare).to.be.above(1);
+            console.log(pricePerShare);
+
+
+            await increaseTime(32*12*10);
+            nonce = parseInt(await this.oracle.currentNonce());
+            await this.oracle.connect(oracle1).pushData(BigInt(62e9), nonce, 2);
+            await this.oracle.connect(oracle2).pushData(BigInt(62e9), nonce, 2);
+            let newPricePerShare = await this.oracle.pricePerShare();
+
+            expect(pricePerShare).to.be.above(newPricePerShare);
         });
     });
 });
