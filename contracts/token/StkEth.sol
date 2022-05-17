@@ -24,7 +24,7 @@ contract StkEth is IStkEth, ERC20, CoreRef {
 
     constructor (address _core) public 
         CoreRef(_core)
-        ERC20("Staked Eth", "stkEth") 
+        ERC20("Staked ETH", "stkETH")
     {
         uint256 chainId;
         // solhint-disable-next-line no-inline-assembly
