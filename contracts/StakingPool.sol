@@ -36,6 +36,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
     uint256 public DEVIATION; // 5% deviation is acceptable
     uint256 public constant BASIS_POINT = 10000;
+    event RewardRedeemed(uint256 amount, uint256 time, address node_operator);
 
     mapping(address => UserInfo) public userInfos;
 
@@ -78,6 +79,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
         if(pending > 0){
             stkEth.transfer(usr, pending);
+            emit RewardRedeemed(pending,block.timestamp,usr);
         }
 
         user.rewardDebt = accRewardPerValidator*userValidators/1e12;
