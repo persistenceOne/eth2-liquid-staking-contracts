@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 /// @author Ankit Parashar
 interface IOracle {
 
-    event Distribute(uint256 amount);
-    event Slash(uint256 amount);
+    event Distribute(uint256 amount,uint256 pricePerShare,uint256 timestamp);
+    event Slash(uint256 amount,uint256 pricePerShare,uint256 timestamp);
 
     function pricePerShare() external view returns (uint256);
 
