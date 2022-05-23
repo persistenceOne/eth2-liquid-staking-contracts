@@ -6,92 +6,124 @@
 
 // Commands to run:-
 // npx hardhat node
-// npx hardhat run --network localhost scripts/deploy.js
+// npx hardhat run --network localhost scripts/deploy_mainnet.js
 
+const { upgrades } = require("hardhat");
 const hre = require("hardhat");
 
-const epochsPerTimePeriod = 10;
+const epochsPerTimePeriod = 200;
 const slotsPerEpoch = 32;
 const secondsPerSlot = 12;
-const genesisTime = 1616508000;
-const qourom = 2;
-const pStakeCommisisons = 200;
-const valCommissions = 300;
+const genesisTime = 1606824023;
+const qourom = 1;
+const pStakeCommisisons = 500;
+const valCommissions = 500;
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 async function main() {
-  [treasury, user1, user2] = await hre.ethers.getSigners();
+
+  let [defaultSigner] = await hre.ethers.getSigners();
+  console.log(defaultSigner.address);
+  // treasury = "0x8E35f095545c56b07c942A4f3B055Ef1eC4CB148";
 
   const Core = await hre.ethers.getContractFactory("Core");
-  const core = await Core.deploy();
+  const core = await Core.attach("0xfB1D0bDFDF1D3CBd5188CEA5cFF6595d6f67E059");
   console.log("Core deployed to ", core.address);
 
-  const stkEthContact = await ethers.getContractAt(
-    "StkEth",
-    await core.stkEth()
-  );
-  console.log("StkEth deployed to ", stkEthContact.address);
+  const stkEth = await core.stkEth();
+  console.log("StkEth deployed to ", stkEth);
 
-  let DepositContract = await ethers.getContractFactory("DummyDepositContract");
-  depositContract = await DepositContract.deploy();
-  console.log("DepositContract deployed to ", depositContract.address);
+  let depositContractAddress = "0x00000000219ab540356cBB839Cbe05303d7705Fa";
+
+
+  let KeysManager = await ethers.getContractFactory("KeysManager");
+  const keysManager = await KeysManager.attach("0xD90BA04ada98b08105Eab75899dbf9cb9f2910C2");
+  console.log("KeysManager deployed to ", keysManager.address);
 
   const Oracle = await hre.ethers.getContractFactory("Oracle");
+
+  // uint64 _epochsPerTimePeriod,
+  // uint64 _slotsPerEpoch,
+  // uint64 _secondsPerSlot,
+  // uint64 _genesisTime,
+  // address _core,
+  // address _keysManager,
+  // uint32 _pStakeCommission,
+  // uint32 _valCommission
+
+
+  let Issuer = await ethers.getContractFactory("Issuer");
+  const issuer = await Issuer.deploy(core.address, 1000, depositContractAddress);
+  console.log("Issuer deployed to ", issuer.address);
+
+  let StakingPool = await ethers.getContractFactory("StakingPool");
+  const stakingPool = await upgrades.deployProxy(StakingPool,[depositContractAddress, "0xfB5c6815cA3AC72Ce9F5006869AE67f18bF77006", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", core.address, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"],{ initializer: 'initialize' });
+  console.log("StakingPool deployed to ", stakingPool.address);
+
+  let tx = await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
+  await tx.wait();
+  // tx = await core.set(await core.PSTAKE_TREASURY(), treasury);
+  // await tx.wait();
+  tx = await core.setWithdrawalCredential("0x0100000000000000000000005945bfe76789c79f54C634f6f704d5400491C90a");
+  await tx.wait();
+  tx = await core.set(await core.KEYS_MANAGER(), keysManager.address);
+  await tx.wait()
+  await core.set(await core.ISSUER(), issuer.address);
+  await tx.wait();
+
   const oracle = await Oracle.deploy(
-    epochsPerTimePeriod,
-    slotsPerEpoch,
-    secondsPerSlot,
-    genesisTime,
-    core.address,
-    pStakeCommisisons,
-    valCommissions
+      epochsPerTimePeriod,
+      slotsPerEpoch,
+      secondsPerSlot,
+      genesisTime,
+      core.address,
+      pStakeCommisisons,
+      valCommissions
   );
   console.log("Oracle deployed to ", oracle.address);
 
-  await oracle.updateQuorom(qourom);
+  tx = await oracle.updateQuorom(qourom);
+  await tx.wait();
   console.log("Quorom initialized to ", qourom);
 
-  let KeysManager = await ethers.getContractFactory("KeysManager");
-  keysManager = await KeysManager.deploy(core.address);
-  console.log("KeysManager deployed to ", keysManager.address);
+  tx = await oracle.updateValidatorQuorom(qourom);
+  await tx.wait();
+  console.log("Validator updation Quorom initialized to ", qourom);
 
-  let Issuer = await ethers.getContractFactory("Issuer");
-  issuer = await Issuer.deploy(
-    core.address,
-    BigInt(32e32),
-    1000,
-    "0x00000000219ab540356cBB839Cbe05303d7705Fa"
-  );
-  console.log("Issuer deployed to ", issuer.address);
 
-  let StakingPool = await ethers.getContractFactory("DummyStakingPool");
-  stakingPool = await StakingPool.deploy();
-  console.log("StakingPool deployed to ", stakingPool.address);
+  tx = await core.set(await core.ORACLE(), oracle.address);
+  await tx.wait();
 
-  await core.set(await core.VALIDATOR_POOL(), stakingPool.address);
-  await core.set(await core.PSTAKE_TREASURY(), treasury.address);
-  await core.set(
-    await core.WITHDRAWAL_CREDENTIAL(),
-    "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
-  );
-  await core.set(await core.KEYS_MANAGER(), keysManager.address);
-  await core.set(await core.ORACLE(), oracle.address);
-  await core.set(await core.ISSUER(), issuer.address);
-
-  await core.grantMinter(oracle.address);
-  await core.grantMinter(issuer.address);
+  tx = await core.grantMinter(oracle.address);
+  await tx.wait();
+  tx = await core.grantMinter(issuer.address);
+  await tx.wait();
+  tx = await core.grantBurner(stakingPool.address);
+  await tx.wait();
   console.log("Minter granted to issuer and oracle");
 
-  await keysManager.addValidator(
-    "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
-    "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
-    "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
-  );
+  tx = await core.grantNodeOperator(defaultSigner.address);
+  await tx.wait();
+  console.log("key admin granted to: ", defaultSigner.address);
 
-  await this.issuer.connect(user1).stake({ value: BigInt(32e18) });
-  const deposit = await this.issuer.depositToEth2(
-    "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34"
-  );
-  console.log("Deposit transaction", deposit);  
+  // tx = await oracle.addOracleMember("0x2E93e2190C8f2f1825Ab40a5899b0c64F60B241d");
+  // await tx.wait();
+  //
+  // tx = await oracle.addOracleMember("0xe9CB071F2Ce62728c4700348fC7e668C76b589dE");
+  // await tx.wait();
+  //
+  // tx = await oracle.addOracleMember("0x74f02Bd9CdaBc08010214E14928535ecf590FfAb");
+  // await tx.wait();
+
+
+  // await keysManager.addValidator(
+  //   "0xb56720cc59e4fa235e5569dbbf1b90a746d5da9809fae4a10e31724aeb1962d948ae95f5aead9dbb7aa2c94972e5ce34",
+  //   "0x84739bf51b0995def38d6e744d063da983034903fc5a7e80c7cbcb05898057a047956b380be42bd128f0dce2ef98e08902a16d7152fc431809f2ced350e6535328b9a303348bed0dfb40d093046fafcd2dc9a68018bfd7496ec5d29d4fb9fa7d",
+  //   "0x3d80b31a78c30fc628f20b2c89d7ddbf6e53cedc"
+  // );
+  // console.log("Validator added");
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
