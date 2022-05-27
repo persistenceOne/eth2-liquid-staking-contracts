@@ -414,7 +414,7 @@ contract Oracle is IOracle, CoreRef {
             _getFrameFirstEpochId(currentFrameEpochId, beaconData)
         );
         require(
-            currentFrameEpochId <=
+            currentFrameEpochId <
             _getFrameFirstEpochId(currentFrameEpochId, beaconData) +
             beaconData.epochsPerTimePeriod
         );
