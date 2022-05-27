@@ -37,18 +37,30 @@ module.exports = {
     //   allowUnlimitedContractSize: true,
     // },
     local: {
-      url: "http://localhost:8545",
+      url: process.env.RPC_URL,
+      accounts: {
+        mnemonic: process.env.MNEMONIC
+      }
     },
     rinkeby: {
       url: "https://eth-rinkeby.alchemyapi.io/v2/RYejb4WXXjHmxxscJB4qNpIZkXMOXskn",
       accounts: ["0a0ddf30ecb569d0133c6108d6223a8d793a57e954443864ea8cce6ac25af30a"],
     },
     goerli: {
+      url: "http://127.0.0.1:8545",
+      chainId: 5,
+      gasMultiplier: 2,
+      accounts: {
+        mnemonic: process.env.MNEMONIC
+      }
+    },
+    mainnet: {
       url: process.env.RPC_URL,
-      accounts: [process.env.PRIVATE_KEY],
-      gas: 500000,
-      gasPrice: 2000000009,
-      gasMultiplier: 2
+      chainId: 1,
+      gasMultiplier: 2,
+      accounts: {
+        mnemonic: process.env.MNEMONIC
+      }
     }
   },
   // gasReporter: {
