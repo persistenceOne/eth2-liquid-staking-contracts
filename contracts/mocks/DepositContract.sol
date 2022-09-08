@@ -15,6 +15,6 @@ contract DummyDepositContract{
     }
 
     function balance() public view returns(uint256) {
-        address(this).balance;
+        return address(this).balance;
     }
 }

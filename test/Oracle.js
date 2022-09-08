@@ -38,7 +38,7 @@ const increaseTime = async (seconds) => {
 };
 
 describe("contract tests", function () {
-    let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4;
+    let defaultSigner, user1, user2, oracle1, oracle2, oracle3, oracle4, userTest;
 
     const epochsPerTimePeriod = 10;
     const slotsPerEpoch = 32;
@@ -64,6 +64,7 @@ describe("contract tests", function () {
             nodeOperator2,
             nodeOperator3,
             treasury,
+            userTest,
         ] = await ethers.getSigners();
 
         let DepositContract = await ethers.getContractFactory(
@@ -76,8 +77,8 @@ describe("contract tests", function () {
 
         let Stketh = await ethers.getContractFactory("StkEth")
         this.stketh = await Stketh.attach(await this.core.stkEth())
-        let StakingPool = await ethers.getContractFactory("StakingPool");
-        this.stakingPool = await upgrades.deployProxy(StakingPool,[this.depositContract.address, "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", this.core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"],{ initializer: 'initialize' });
+        let StakingPool = await ethers.getContractFactory("StakingPoolOld");
+        this.stakingPool = await upgrades.deployProxy(StakingPool, [this.depositContract.address, "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", this.core.address, "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"], {initializer: 'initialize'});
         await this.stakingPool.deployed();
 
         let KeysManager = await ethers.getContractFactory("KeysManager");
@@ -114,6 +115,7 @@ describe("contract tests", function () {
 
         await this.core.grantMinter(this.oracle.address);
         await this.core.grantMinter(this.issuer.address);
+        await this.core.grantBurner(this.stakingPool.address);
         await this.core.grantKeyAdmin(defaultSigner.address);
         await this.core.grantNodeOperator(defaultSigner.address);
 
@@ -362,7 +364,7 @@ describe("contract tests", function () {
             await expect(
                 this.oracle.connect(oracle1).pushData(BigInt(32e9), nonce + 1, 1)
             ).to.be.revertedWith("incorrect Nonce");
-             this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
+            this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
 
             await expect(
                 this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2)
@@ -387,7 +389,7 @@ describe("contract tests", function () {
                 "0xa71aee2aabea9b69daf14a494d91b1edea3ab25ae3d2f3a9b2269bc7b05268d6b6745307bd7ee7cccf5338a9b2a23712"
             );
             await expect(
-                this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce+1, 0)
+                this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce + 1, 0)
             ).to.be.revertedWith("Invalid numberOfValidators");
 
         });
@@ -447,9 +449,32 @@ describe("contract tests", function () {
                     valEth
                 );
             });
-
-
         });
+    });
+    describe("Priority fees should be re-staked", function () {
+        it('should update the contract', async function(){
+            console.log("upgrading contract");
+            const StakingPoolNew = await ethers.getContractFactory("StakingPool");
+            console.log("read function successfully");
+            console.log(this.stakingPool.address);
+            await upgrades.upgradeProxy(this.stakingPool.address, StakingPoolNew);
+        })
+        it('should receive eth reward', async function () {
+            let StakingPoolNew = await hre.ethers.getContractFactory("StakingPool");
+            await upgrades.upgradeProxy(this.stakingPool.address, StakingPoolNew);
+            await userTest.sendTransaction({to: this.stakingPool.address, value: BigInt(10e18)})
+            await expect(await ethers.provider.getBalance(this.stakingPool.address)).to.equal(BigInt(10e18))
+        });
+        it('should restake eth rewards', async function () {
+            let StakingPoolNew = await hre.ethers.getContractFactory("StakingPool");
+            this.stakingPool = await upgrades.upgradeProxy(this.stakingPool.address, StakingPoolNew);
+            await userTest.sendTransaction({to: this.stakingPool.address, value: BigInt(10e18)});
+            await this.stakingPool.connect(userTest).stakePriorityFee();
+            await expect(await ethers.provider.getBalance(this.stakingPool.address)).to.equal(BigInt(0));
+            await expect(await this.stketh.balanceOf(this.stakingPool.address)).to.equal(BigInt(0));
+            await expect(await ethers.provider.getBalance(this.issuer.address)).to.equal(BigInt(10e18));
+        });
+
     });
 
     describe("Should implement slashing", function () {
@@ -478,7 +503,7 @@ describe("contract tests", function () {
             );
 
             nonce = parseInt(await this.oracle.currentNonce());
-            await increaseTime(32*12*10);
+            await increaseTime(32 * 12 * 10);
             let epoch1pricePerShare = await this.oracle.pricePerShare();
 
 
@@ -487,11 +512,11 @@ describe("contract tests", function () {
 
             let pricePerShare = await this.oracle.pricePerShare();
             expect(pricePerShare).to.be.above(epoch1pricePerShare);
-            expect(1e18/pricePerShare).to.be.below(1);
+            expect(1e18 / pricePerShare).to.be.below(1);
 
             nonce = parseInt(await this.oracle.currentNonce());
 
-            await increaseTime(32*12*10);
+            await increaseTime(32 * 12 * 10);
             await this.oracle.connect(oracle1).pushData(BigInt(65e9), nonce, 2);
             await this.oracle.connect(oracle2).pushData(BigInt(65e9), nonce, 2);
             let newPricePerShare = await this.oracle.pricePerShare();
@@ -527,7 +552,7 @@ describe("contract tests", function () {
             );
 
             nonce = parseInt(await this.oracle.currentNonce());
-            await increaseTime(32*12*10);
+            await increaseTime(32 * 12 * 10);
             let epoch1pricePerShare = await this.oracle.pricePerShare();
 
             console.log(epoch1pricePerShare)
@@ -535,11 +560,11 @@ describe("contract tests", function () {
             await this.oracle.connect(oracle2).pushData(BigInt(63e9), nonce, 2);
 
             let pricePerShare = await this.oracle.pricePerShare();
-            expect(1e18/pricePerShare).to.be.above(1);
+            expect(1e18 / pricePerShare).to.be.above(1);
             console.log(pricePerShare);
 
 
-            await increaseTime(32*12*10);
+            await increaseTime(32 * 12 * 10);
             nonce = parseInt(await this.oracle.currentNonce());
             await this.oracle.connect(oracle1).pushData(BigInt(62e9), nonce, 2);
             await this.oracle.connect(oracle2).pushData(BigInt(62e9), nonce, 2);
