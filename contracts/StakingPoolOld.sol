@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IStakingPool} from "./interfaces/IStakingPool.sol";
+import {IStakingPoolOld} from "./interfaces/IStakingPoolOld.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IUniswapRouter} from "./interfaces/external/IUniswapRouter.sol";
 import {IStkEth} from "./interfaces/IStkEth.sol";
@@ -11,9 +11,8 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {IIssuer} from "./interfaces/IIssuer.sol";
 import {IKeysManager} from "./interfaces/IKeysManager.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
-import {Issuer} from "./Issuer.sol";
 
-contract StakingPool is IStakingPool, OwnableUpgradeable {
+contract StakingPoolOld is IStakingPoolOld, OwnableUpgradeable {
 
     struct UserInfo {
         uint256 amount;     // How many validators the user has provided.
@@ -39,7 +38,6 @@ contract StakingPool is IStakingPool, OwnableUpgradeable {
     uint256 public constant BASIS_POINT = 10000;
 
     event RewardRedeemed(uint256 amount, address node_operator);
-    event FeeReceived(uint256 amount);
 
     mapping(address => UserInfo) public userInfos;
 
@@ -60,20 +58,6 @@ contract StakingPool is IStakingPool, OwnableUpgradeable {
         router = _router;
         WETH = _weth;
         DEVIATION = 500;
-    }
-
-    receive() external payable {
-        emit FeeReceived(msg.value);
-    }
-
-    function stakePriorityFee() external override returns (bool){
-        if (address(this).balance == 0) {
-            return false;
-        }
-        uint256 stkETHPriorityFee = (address(this).balance * 1e18) / stkEth.pricePerShare();
-        Issuer(core.issuer()).stake{value : address(this).balance}();
-        stkEth.burn(address(this), stkETHPriorityFee);
-        return true;
     }
 
     function updateRewardPerValidator(uint256 newReward) public override {
